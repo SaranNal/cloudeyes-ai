@@ -1,0 +1,11 @@
+version: "3"
+services:
+  cloudeyes-ai:
+    container_name: cloudeyes-ai
+    env_file: ./app/.env
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./app:/code/app
