@@ -8,9 +8,10 @@ class Settings(BaseSettings):
     openai_key: str
     api_key: str
     env: str
+    mongo_url: str
 
     class Config:
-        env_file = ".env"
+        env_file = "env/.env"
 
 
 @lru_cache()
