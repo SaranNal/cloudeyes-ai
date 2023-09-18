@@ -10,18 +10,24 @@ with open('service_metrics_updated.json') as metric_file:
 
 daily_utilization_data = []
 metric_data = metric_data['data']
-dict_hepler = lambda: defaultdict(dict_hepler)
+def dict_hepler(): return defaultdict(dict_hepler)
+
+
 final_metric_data = dict_hepler()
 for service, metric_dict in metric_data.items():
     for instance_id, metrics in metric_dict.items():
-        services = {}
-        if instance_id == 'MetricDataResults':
-            metrics[0]['Timestamps'] = [eval(timestamp).strftime("%m/%d/%Y") for timestamp in metrics[0]['Timestamps']]            
-            final_metric_data[service] = {metrics[0]['Label'] : dict(zip(metrics[0]['Timestamps'], metrics[0]['Values']))}
-        else:
-            for metric in metrics['MetricDataResults']:
-                metric['Timestamps'] = [eval(timestamp).strftime("%m/%d/%Y") for timestamp in metric['Timestamps']]
-                final_metric_data[service][instance_id][metric['Label']] = dict(zip(metric['Timestamps'], metric['Values']))
+        is_metric_result = instance_id == 'MetricDataResults'
+        service_metrics = metrics if is_metric_result else metrics[
+            'MetricDataResults']
+        for metric in service_metrics:
+            metric['Timestamps'] = [eval(timestamp).strftime(
+                "%m/%d/%Y") for timestamp in metric['Timestamps']]
+            if is_metric_result:
+                final_metric_data[service][metric['Label']] = dict(
+                    zip(metric['Timestamps'], metric['Values']))
+            else:
+                final_metric_data[service][instance_id][metric['Label']] = dict(
+                    zip(metric['Timestamps'], metric['Values']))
 
 test = get_customer_db('test')
 print(test)
