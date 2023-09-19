@@ -26,3 +26,6 @@ tzdata==2023.3
 urllib3==2.0.4
 uvicorn==0.15.0
 yarl==1.9.2
+requests
+python-jose
+jwcrypto

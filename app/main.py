@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKeyHeader
 from fastapi import Security, HTTPException, Depends
@@ -7,6 +7,9 @@ from pydantic import BaseModel, Field, Json
 from typing import Any
 from .helper import get_answer, get_settings
 import uvicorn
+import time
+from app.authenticator.cognito import cognito_validate
+from starlette.responses import JSONResponse
 
 
 class Item(BaseModel):
@@ -28,6 +31,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# app.add_middleware(CustomHeaderMiddleware)
 
 
 settings = get_settings()
@@ -61,6 +66,26 @@ def pages(item: Item, api_key: APIKeyHeader = Depends(get_api_key)):
         "details": details,
         "response": response
     }
+
+
+@app.middleware("http")
+async def cognito_authenticate(request: Request, call_next):
+    token = request.headers["auth"]
+    verification_of_token = cognito_validate(token)
+
+    # temp = cognito("test")
+    # verification_of_token = True
+    if verification_of_token:
+        response = await call_next(request)
+        response.headers["X-Process-Time"] = verification_of_token
+        return response
+    else:
+        return JSONResponse(status_code=403)  # or 401
+
+
+@app.get("/gets")
+def testget():
+    return {"Hello": "World"}
 
 
 if __name__ == '__main__':
