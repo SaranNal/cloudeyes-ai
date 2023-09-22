@@ -18,7 +18,7 @@ for customer_id, billing_data in billing_datas.items():
     customer_db = get_customer_db(customer_id)
     print(
         '----------------------------{}----------------------------'.format(customer_id))
-    print('Daily billing data: {}'.format(
+    print('Billing data: {}'.format(
         json.dumps(final_billing)))
     daily_billing = customer_db['daily_billing']
     result = daily_billing.insert_many(final_billing)
