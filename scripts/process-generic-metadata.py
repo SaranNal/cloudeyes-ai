@@ -4,7 +4,7 @@ from dateutil.tz import tzutc
 from collections import defaultdict
 from app.db_utility import get_admin_db
 
-with open('instance-metadata.json') as metadata_file:
+with open('generic_metadata.json') as metadata_file:
     metadata = json.load(metadata_file)
 
 ec2_attributes = ["intelTurboAvailable", "memory", "dedicatedEbsThroughput", "vcpu", "storage", "instanceFamily", "operatingSystem",
