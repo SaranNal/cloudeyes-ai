@@ -3,9 +3,9 @@ import json
 import boto3
 import datetime
 from dateutil.tz import tzutc
-# from .helper import get_settings
+from app import helper
 from collections import defaultdict
-# from app.db_utility import get_customer_db
+from app.db_utility import get_customer_db
 from botocore.exceptions import BotoCoreError
 
 # get env variables
@@ -29,7 +29,6 @@ try:
     # Fetch the file and read its contents
     obj = s3.get_object(Bucket=bucket_name, Key=file_key)
     metric_data = json.loads(obj['Body'].read().decode('utf-8'))
-    print(file_content)
 except json.JSONDecodeError as e:
     print("JSON decoding fail")
     sys.exit(1)
