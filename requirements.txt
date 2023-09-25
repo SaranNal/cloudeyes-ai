@@ -15,6 +15,7 @@ numpy
 openai
 pandas
 pydantic
+pydantic-settings
 python-dateutil
 pytz
 requests
@@ -27,4 +28,3 @@ urllib3
 uvicorn
 yarl
 boto3
-sys
