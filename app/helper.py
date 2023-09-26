@@ -1,27 +1,21 @@
 import openai
 from functools import lru_cache
-from pydantic_settings import BaseSettings
 import pandas as pd
+from dotenv import load_dotenv
+import os
 
+# Specify the path to your .env file
+dotenv_path = '.env'
 
-class Settings(BaseSettings):
-    openai_key: str
-    api_key: str
-    env: str
-    mongo_url: str
-
-    class Config:
-        env_file = "env/.env"
+# Load variables from the custom .env file
+load_dotenv(dotenv_path)
 
 
 @lru_cache()
-def get_settings():
-    return Settings()
+def get_settings(setting):
+    return os.getenv(setting)  # config = {"USER": "foo", "EMAIL": "foo@example.org"}
 
-
-settings = get_settings()
-openai.api_key = settings.openai_key
-
+openai.api_key = get_settings("api_key")
 
 def get_answer(question, details):
     print("Get answer for the question based on details provided...")

@@ -1,10 +1,9 @@
 from pymongo import MongoClient
 from .helper import get_settings
+import os
 
-# get env variables
-settings = get_settings()
+mongo_url = get_settings("mongo_url")
 
-mongo_url = settings.mongo_url
 db_connection = MongoClient(mongo_url)
 
 def get_admin_db():
