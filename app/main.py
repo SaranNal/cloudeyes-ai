@@ -30,13 +30,12 @@ app.add_middleware(
 )
 
 
-settings = get_settings()
 api_key_header = APIKeyHeader(name="access_token", auto_error=False)
 
 
 async def get_api_key(api_key_header: str = Security(api_key_header)):
     """Validate the API key in the header"""
-    if api_key_header == settings.api_key:
+    if api_key_header == get_settings('api_key'):
         return api_key_header
     else:
         raise HTTPException(
