@@ -16,7 +16,6 @@ load_dotenv(dotenv_path)
 
 @lru_cache()
 def get_settings(setting):
-    # config = {"USER": "foo", "EMAIL": "foo@example.org"}
     return os.getenv(setting)
 
 
