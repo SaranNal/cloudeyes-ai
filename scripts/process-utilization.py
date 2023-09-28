@@ -3,15 +3,10 @@ import json
 import boto3
 import datetime
 from dateutil.tz import tzutc
-from app import helper
+from app.helper import dict_helper
 from collections import defaultdict
 from app.db_utility import get_customer_db
 from botocore.exceptions import BotoCoreError
-
-# get env variables
-# settings = get_settings()
-# print(settings)
-# sys.exit(1)
 
 # Fetching the File name
 if len(sys.argv) > 1:
@@ -37,13 +32,10 @@ except Exception as e:
     sys.exit(1)
 
 
-def dict_hepler(): return defaultdict(dict_hepler)
-
-
 for customer_id, metric_datas in metric_data.items():
     for account_id, metric_data in metric_datas.items():
         daily_utilization_data = []
-        final_metric_data = dict_hepler()
+        final_metric_data = dict_helper()
         final_metric_data['account_id'] = account_id
         for service, metric_dict in metric_data.items():
             for instance_id, metrics in metric_dict.items():
