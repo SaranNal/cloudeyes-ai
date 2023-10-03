@@ -34,7 +34,7 @@ app.add_middleware(
 api_key_header = APIKeyHeader(name="access_token", auto_error=False)
 
 
-async def get_api_key(api_key_header: str = Security(api_key_header)):
+async def get_api_key(api_key_header: str=Security(api_key_header)):
     """Validate the API key in the header"""
     if api_key_header == get_settings("api_key"):
         return api_key_header
@@ -55,12 +55,15 @@ def question(input_data: InputData):
     details = input_data.details
     if not question and not details:
         return {"Please provide the question and details"}
-    return openai_helper.classify_question(question)
-    os._exit()
-    return {
-        "question": question,
-        "details": details
-    }
+    classified_list = openai_helper.classify_question(question)
+    return classified_list
+    if isinstance(classified_list, list): 
+        if 'None' in classified_list:
+            return {"message": "Invalid question"}
+        classified_list = openai_helper.fetch_context(classified_list, question, "customer")
+    else:
+        return {"message": "It's working"}
+
 
 if __name__ == '__main__':
     uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True)
