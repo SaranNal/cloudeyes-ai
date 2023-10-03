@@ -24,7 +24,7 @@ openai.api_key = get_settings("api_key")
 
 def get_answer(question, details):
     print("Get answer for the question based on details provided...")
-    res_text = resample_timeseries(details['billing'])
+    res_text = ""
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=[
@@ -49,23 +49,6 @@ def get_answer(question, details):
     res_text = response.choices[0].message.content
     print("Generated response: %s" % res_text)
     return res_text
-
-
-def resample_timeseries(data):
-    frame = pd.DataFrame(data)
-    frame.index = pd.to_datetime(frame.index)
-    # get the number of days in the timeseries
-    diff = frame.index.max() - frame.index.min()
-    if 0 < diff.days <= 31:
-        # resample to week
-        resampled_data = frame.resample('W').mean()
-    elif 31 < diff.days <= 365:
-        # resample to quarter start
-        resampled_data = frame.resample('QS').mean()
-    else:
-        # resample to year start
-        resampled_data = frame.resample('BAS').mean()
-    return resampled_data
 
 
 def dict_helper(): return defaultdict(dict_helper)
