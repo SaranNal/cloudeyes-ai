@@ -40,7 +40,7 @@ def classify_question(question):
 
 
 # Fetching context for question by passing classification 
-def fetch_context(classification, question, customer_details):
+def fetch_context(classification, question, customer_detail):
   admin_db = db_utility.get_admin_db()
   customer_collection = admin_db.customer 
   # Fetch data from the collection
@@ -53,7 +53,7 @@ def fetch_context(classification, question, customer_details):
   for classify in classification:
     context.append(customer_details[classify])
   
-    openai.api_key = helper.get_settings("openai_key")
+  openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
     messages=[
