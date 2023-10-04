@@ -3,9 +3,10 @@ import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
 from app.db_utility import get_admin_db
+import app.helper as helper
+import sys
 
-with open('generic_metadata.json') as metadata_file:
-    metadata = json.load(metadata_file)
+metadata = helper.retrieve_file_n_decode(sys)
 
 ec2_attributes = ["intelTurboAvailable", "memory", "dedicatedEbsThroughput", "vcpu", "storage", "instanceFamily", "operatingSystem",
                   "physicalProcessor", "clockSpeed", "ecu", "networkPerformance", "gpuMemory", "tenancy", "processorArchitecture"]
@@ -14,6 +15,7 @@ rds_attributes = ["instanceTypeFamily", "memory", "vcpu", "storage", "instanceFa
 
 
 def dict_helper(): return defaultdict(dict_helper)
+
 
 final_metadata = []
 generic_metadata = dict_helper()
