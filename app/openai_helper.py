@@ -16,7 +16,7 @@ def classify_question(question):
         "role": "user",
         "content": question
       }
-    ], x
+    ],
     temperature=1,
     max_tokens=256,
     top_p=1,
