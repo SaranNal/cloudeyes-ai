@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import os
 from collections import defaultdict
 from dateutil.parser import parse
+import json
+import boto3
 
 # Specify the path to your .env file
 dotenv_path = '.env'
@@ -60,3 +62,29 @@ def is_date(string):
 
     except ValueError:
         return False
+
+
+def retrieve_file_n_decode(sys):
+    # Fetching the File name
+    if len(sys.argv) > 1:
+        file_key = sys.argv[1]
+        print(f"Processing file: {file_key}")
+    else:
+        print("No S3 file name provided")
+        sys.exit(1)
+
+    # Initialize the S3 client
+    s3 = boto3.client('s3')
+    bucket_name = get_settings()
+
+    try:
+        # Fetch the file and read its contents
+        obj = s3.get_object(Bucket=bucket_name, Key=file_key)
+        metric_data = json.loads(obj['Body'].read().decode('utf-8'))
+        return metric_data
+    except json.JSONDecodeError as e:
+        print("JSON decoding fail")
+        sys.exit(1)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
