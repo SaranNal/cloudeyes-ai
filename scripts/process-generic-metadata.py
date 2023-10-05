@@ -2,7 +2,7 @@ import json
 import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
-from app.db_utility import get_admin_db
+from app.db_utility import get_database
 
 with open('generic_metadata.json') as metadata_file:
     metadata = json.load(metadata_file)
@@ -31,7 +31,7 @@ for instance_name, metadatas in metadata.items():
                 generic_metadata[instance_name]['pricing'][term_type][term_id][price_id]['price'] = price_detail['pricePerUnit']['USD']
 
 final_metadata.append(generic_metadata)
-admin_db = get_admin_db()
+admin_db = get_database('admin')
 print('Generic metadata: {}'.format(
     json.dumps(final_metadata)))
 generic_metadata_collection = admin_db['generic_metadata']

@@ -41,7 +41,7 @@ def classify_question(question):
 
 # Fetching context for question by passing classification 
 def fetch_context(classification, question, customer_detail):
-  admin_db = db_utility.get_admin_db()
+  admin_db = db_utility.get_database('admin')
   customer_collection = admin_db.customer 
   # Fetch data from the collection
   customer_details = customer_collection.find()  # You can also pass query conditions to find specific data

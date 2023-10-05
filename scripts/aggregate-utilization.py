@@ -1,6 +1,6 @@
 import pandas as pd
 from app.helper import dict_helper, is_date
-from app.db_utility import get_admin_db, get_customer_db
+from app.db_utility import get_database, insert_data_customer_db
 from datetime import datetime, timedelta
 
 
@@ -30,14 +30,13 @@ def aggregate_timeseries(data, range='year'):
 
 
 # Get the admin database
-admin_db = get_admin_db()
+admin_db = get_database('admin')
 customers = admin_db['customers'].find()
 
 for customer in customers:
     customer_id = customer['customer_id']
-    customer_db = get_customer_db(customer_id)
+    customer_db = get_database(customer_id)
     daily_utilization = customer_db['daily_utilization']
-    aggregate_utilization_collection = customer_db['aggregate_utilization']
 
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)
@@ -101,12 +100,6 @@ for customer in customers:
         reconstructed_dict['account_id'] = account_id
         aggregated_utilization.append(reconstructed_dict)
 
-        # Clear the existing data and insert the aggregated records
-        aggregate_utilization_collection.delete_many(
-            {'account_id': account_id})
-        aggregated_id = aggregate_utilization_collection.insert_many(
-            aggregated_utilization)
+        insert_data_customer_db(customer_id, 'aggregate_utilization', aggregated_utilization, {'account_id': account_id})
 
-        print("Inserted aggregated record:{} with id:{}".format(
-            aggregated_utilization, aggregated_id))
-        print("---------------------------------------------------")
+print("Aggregated utilization data for all customers")
