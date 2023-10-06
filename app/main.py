@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKeyHeader
 from fastapi import Security, HTTPException, Depends
@@ -9,6 +9,8 @@ import app.helper as helper
 import uvicorn
 import app.openai_helper as openai_helper
 import os
+from app.authenticator.cognito import cognito_validate
+from starlette.responses import JSONResponse
 
 
 class InputData(BaseModel):
@@ -40,6 +42,22 @@ async def get_api_key(api_key_header: str=Security(api_key_header)):
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate API KEY"
         )
+
+
+@app.middleware("http")
+async def cognito_authenticate(request: Request, call_next):
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        # return HTTPException(status_code=401)
+        return JSONResponse(status_code=401, content="Authentication missing")  # or 401
+
+    verification_of_token = cognito_validate(token)
+    if verification_of_token:
+        response = await call_next(request)
+        return response
+    else:
+        return JSONResponse(status_code=401, content="Authentication failed")  # or 401
 
 
 @app.get("/")

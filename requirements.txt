@@ -29,3 +29,5 @@ uvicorn
 yarl
 boto3
 pymongo
+python-jose
+jwcrypto
