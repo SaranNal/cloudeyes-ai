@@ -35,6 +35,7 @@ customers = admin_db['customers'].find()
 
 for customer in customers:
     customer_id = customer['customer_id']
+    print("Aggregating utilization data for customer: {}".format(customer_id))
     customer_db = get_database(customer_id)
     daily_utilization = customer_db['daily_utilization']
 
