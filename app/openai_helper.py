@@ -65,9 +65,7 @@ def fetch_context(classification, question, customer_db):
     customer_collection = customer_db[classify]
     customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
     for document in customer_details:
-      print("fsdfd")
-      print(document)
-      context + json.dumps(document, cls=ObjectIdEncoder)
+      context = context + json.dumps(document, cls=ObjectIdEncoder)
   ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
   context = ai_input + context
 
