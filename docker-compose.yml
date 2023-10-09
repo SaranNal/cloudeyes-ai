@@ -8,13 +8,3 @@ services:
       - "8080:8080"
     volumes:
       - ./app:/code/app
-    links:
-      - cloudeyes-ai-mongo
-
-  cloudeyes-ai-mongo:
-    container_name: cloudeyes-ai-mongo
-    image: mongo
-    volumes:
-      - ~/cloudeyes_ai_mongo:/data/db
-    ports:
-      - '27018:27017'

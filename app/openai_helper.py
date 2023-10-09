@@ -1,6 +1,17 @@
 import openai
 import app.helper as helper
 import app.db_utility as db_utility
+import json
+from bson import ObjectId
+
+
+# Custom JSON encoder to handle ObjectId
+class ObjectIdEncoder(json.JSONEncoder):
+
+    def default(self, o):
+        if isinstance(o, ObjectId):
+            return str(o)
+        return super().default(o)
 
 
 def classify_question(question):
@@ -40,19 +51,26 @@ def classify_question(question):
 
 
 # Fetching context for question by passing classification 
-def fetch_context(classification, question, customer_detail):
-  admin_db = db_utility.get_admin_db()
-  customer_collection = admin_db.customer 
-  # Fetch data from the collection
-  customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
-  context = {}
-  
-  ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
-  context = ai_input . str(context)
-
+def fetch_context(classification, question, customer_db):
+  customer_db = db_utility.get_customer_db(customer_db)
+  context = ""
+  print(classification)
   for classify in classification:
-    context.append(customer_details[classify])
-  
+    if classify == 'Utilization':
+      classify = 'aggregate_utilization'
+    elif classify == ('Security' or 'Recommendation'):
+      classify = 'security_recommendations'
+    elif classify == ('Billing'):
+      classify = 'aggregate_billing'
+    customer_collection = customer_db[classify]
+    customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
+    for document in customer_details:
+      print("fsdfd")
+      print(document)
+      context + json.dumps(document, cls=ObjectIdEncoder)
+  ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
+  context = ai_input + context
+
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
@@ -73,4 +91,4 @@ def fetch_context(classification, question, customer_detail):
     presence_penalty=0
   )
   
-  return context
+  return response

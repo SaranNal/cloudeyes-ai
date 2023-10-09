@@ -20,21 +20,17 @@ def cognito_validate(token):
     response = requests.get(COGNITO_KEYS_URL)
     keys = response.json()['keys']
 
-    # Decode & Verify Token
-
-    header = jwt.get_unverified_header(token)
-
-    kid = header['kid']
-    print(kid)
-    print(keys)
-
-    # Find the key with matching `kid` in the JWKS
-    key_json = [k for k in keys if k['kid'] == kid][0]
-    pem_key = jwk_to_pem(key_json)
-
-    # payload = jwt.decode(token, pem_key, algorithms=['RS256'])
-
     try:
+        # Decode & Verify Token
+        header = jwt.get_unverified_header(token)
+
+        kid = header['kid']
+        print(kid)
+        print(keys)
+
+        # Find the key with matching `kid` in the JWKS
+        key_json = [k for k in keys if k['kid'] == kid][0]
+        pem_key = jwk_to_pem(key_json)
         # Verify and decode the token
         payload = jwt.decode(token, pem_key, algorithms=['RS256'])
         return True
