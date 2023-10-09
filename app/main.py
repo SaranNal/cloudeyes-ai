@@ -19,6 +19,9 @@ class InputData(BaseModel):
     )
     details: str = Field(
         default=None, title="The associated data from the user's account"
+    ),
+    customer_id: str = Field(
+        default=None, title="The associated data from the user's account"
     )
 
 
@@ -69,14 +72,16 @@ async def root():
 def question(input_data: InputData):
     question = input_data.question
     details = input_data.details
+    customer_id = input_data.customer_id
     if not question and not details:
         return {"Please provide the question and details"}
     classified_list = openai_helper.classify_question(question)
-    return classified_list
+    
     if isinstance(classified_list, list): 
         if 'None' in classified_list:
             return {"message": "Invalid question"}
-        classified_list = openai_helper.fetch_context(classified_list, question, "customer")
+        openai_answer = openai_helper.fetch_context(classified_list, question, customer_id)
+        return openai_answer
     else:
         return {"message": "It's working"}
 
