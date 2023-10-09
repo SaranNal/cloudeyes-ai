@@ -51,10 +51,16 @@ def classify_question(question):
 
 
 # Fetching context for question by passing classification 
-def fetch_context(classification, question, customer_db):
-  customer_db = db_utility.get_customer_db(customer_db)
-  context = ""
-  print(classification)
+def fetch_context(classification, question, customer_detail):
+  admin_db = db_utility.get_database('admin')
+  customer_collection = admin_db.customer 
+  # Fetch data from the collection
+  customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
+  context = {}
+  
+  ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
+  context = ai_input . str(context)
+
   for classify in classification:
     if classify == 'Utilization':
       classify = 'aggregate_utilization'
