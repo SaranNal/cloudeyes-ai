@@ -55,7 +55,7 @@ def openai_answer(classification, question, customer_id, chat_id):
   context = fetch_context(classification, customer_id)
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
-    model=helper.get_settings("openai_model"),
+    model="gpt-3.5-turbo",
     messages=[
       {
         "role": "system",
@@ -80,11 +80,8 @@ def openai_answer(classification, question, customer_id, chat_id):
 def fetch_context(classification, customer_id):
   
   customer_db = db_utility.get_database(customer_id)
-  context = {}
+  context = ""
   
-  ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
-  context = ai_input . str(context)
-
   for classify in classification:
     if classify == 'Utilization':
       classify = 'aggregate_utilization'
