@@ -72,8 +72,25 @@ def openai_answer(classification, question, customer_id, chat_id):
     frequency_penalty=0,
     presence_penalty=0
   )
-  
+  append_chat(response, customer_id, chat_id)
   return response
+
+
+def append_chat(response, customer_id, chat_id):
+  message_content = response["choices"][0]["message"]["content"]
+  formatted_data = {
+    "token_sie": 40,
+    "timestamp": "date",
+    "chat_id": chat_id,
+    "account_id": "account_id",
+    "message": {
+      "role": "assistant",
+      "content": message_content
+    }
+  }
+  customer_db = db_utility.get_database(customer_id)
+  customer_collection = customer_db["chat_threads"]
+  result = customer_db.insert_one(formatted_data)
 
 
 # Fetching context based on classification
