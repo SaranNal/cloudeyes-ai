@@ -51,33 +51,11 @@ def classify_question(question):
 
 
 # Fetching context for question by passing classification 
-def fetch_context(classification, question, customer_detail):
-  admin_db = db_utility.get_database('admin')
-  customer_collection = admin_db.customer 
-  # Fetch data from the collection
-  customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
-  context = {}
-  
-  ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
-  context = ai_input . str(context)
-
-  for classify in classification:
-    if classify == 'Utilization':
-      classify = 'aggregate_utilization'
-    elif classify == ('Security' or 'Recommendation'):
-      classify = 'security_recommendations'
-    elif classify == ('Billing'):
-      classify = 'aggregate_billing'
-    customer_collection = customer_db[classify]
-    customer_details = customer_collection.find()  # You can also pass query conditions to find specific data
-    for document in customer_details:
-      context = context + json.dumps(document, cls=ObjectIdEncoder)
-  ai_input = "You are a cloud cost expert. You will be auditing aws account and analysing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
-  context = ai_input + context
-
+def openai_answer(classification, question, customer_id, chat_id):
+  context = fetch_context(classification, customer_id)
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model=helper.get_settings("openai_model"),
     messages=[
       {
         "role": "system",
@@ -96,3 +74,28 @@ def fetch_context(classification, question, customer_detail):
   )
   
   return response
+
+
+# Fetching context based on classification
+def fetch_context(classification, customer_id):
+  
+  customer_db = db_utility.get_database(customer_id)
+  context = {}
+  
+  ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
+  context = ai_input . str(context)
+
+  for classify in classification:
+    if classify == 'Utilization':
+      classify = 'aggregate_utilization'
+    elif classify == ('Security' or 'Recommendation'):
+      classify = 'security_recommendations'
+    elif classify == ('Billing'):
+      classify = 'aggregate_billing'
+    customer_collection = customer_db[classify]
+    customer_details = customer_collection.find()
+    for document in customer_details:
+      context = context + json.dumps(document, cls=ObjectIdEncoder)
+  ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
+  context = ai_input + context
+  return context
