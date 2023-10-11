@@ -4,7 +4,7 @@ import app.db_utility as db_utility
 import json
 from bson import ObjectId
 import tiktoken
-# import os
+import os
 # import asyncio
 
 
@@ -56,6 +56,7 @@ def classify_question(question):
 # Fetching context for question by passing classification 
 def openai_answer(classification, question, customer_id, chat_id):
   context = fetch_context(classification, customer_id)
+  
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
@@ -82,6 +83,7 @@ def openai_answer(classification, question, customer_id, chat_id):
   # task_C = loop.create_task(append_chat(response, customer_id, chat_id))
   # asyncio.run(append_chat(response, customer_id, chat_id))
   append_chat(response, customer_id, chat_id)
+  
   print("testing after async")
   return response
 
@@ -119,6 +121,7 @@ def fetch_context(classification, customer_id):
   
   customer_db = db_utility.get_database(customer_id)
   context = ""
+  doc_context = {}
   
   for classify in classification:
     if classify == 'Utilization':
@@ -130,7 +133,14 @@ def fetch_context(classification, customer_id):
     customer_collection = customer_db[classify]
     customer_details = customer_collection.find()
     for document in customer_details:
-      context = context + json.dumps(document, cls=ObjectIdEncoder)
+      document.pop('_id', None)
+      document.pop('account_id', None)
+      # document["token_count"]
+      doc_context.update(document)
+
+  context = json.dumps(doc_context, cls=ObjectIdEncoder)
+
   ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific"
+  ai_input_token_count = 50
   context = ai_input + context
   return context
