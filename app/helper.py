@@ -7,6 +7,8 @@ from collections import defaultdict
 from dateutil.parser import parse
 import json
 import boto3
+import hashlib
+import time
 
 # Specify the path to your .env file
 dotenv_path = '.env'
@@ -88,3 +90,9 @@ def retrieve_file_n_decode(sys):
     except Exception as e:
         print(f"An error occurred: {e}")
         sys.exit(1)
+
+def generate_chatid(account_id):
+    """Generate chat id using account_id and current timestamp"""
+    timestamp = str(int(time.time()))
+    data = account_id + timestamp
+    return hashlib.md5(data.encode()).hexdigest()

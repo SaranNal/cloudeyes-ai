@@ -12,6 +12,7 @@ import os
 from app.authenticator.cognito import cognito_validate
 from starlette.responses import JSONResponse
 import app.db_utility as db_utility
+from datetime import datetime
 
 
 class InputData(BaseModel):
@@ -82,14 +83,38 @@ def question(input_data: InputData):
         return {"Please pass a question"}
     classified_list = openai_helper.classify_question(question)
 
-    if isinstance(classified_list, list):
-        if 'None' in classified_list:
-            return {"message": "Invalid question"}
-        openai_answer = openai_helper.openai_answer(
-            classified_list, question, customer_id, account_id, chat_id)
-        return openai_answer
-    else:
-        return {"message": "It's working"}
+    if chat_id == "":
+        chat_id = helper.generate_chatid(account_id)
+
+    message = "Please rephrase your question or ask a relevant question!"
+    try:
+        if isinstance(classified_list, list):
+            if 'None' not in classified_list:
+                openai_answer = openai_helper.openai_answer(
+                    classified_list, question, customer_id, account_id, chat_id)
+                message = openai_answer['choices'][0]['message']['content']
+
+        chat_threads_list = []
+        chat_threads = helper.dict_helper()
+        chat_threads["token_size"] = openai_answer['usage']['total_tokens']
+        chat_threads["timestamp"] = datetime.now()
+        chat_threads["chat_id"] = chat_id
+        chat_threads["account_id"] = account_id,
+        chat_threads["chat_data"] = {
+            "question": question,
+            "answer": message,
+        }
+        chat_threads_list.append(chat_threads)
+        db_utility.insert_data_customer_db(customer_id, 'chat_threads', chat_threads_list)
+
+    except KeyError:
+        print("OpenAI response is in unexpected format")
+
+
+    return {
+        "message": message,
+        "chat_id": chat_id
+    }
 
 
 if __name__ == '__main__':
