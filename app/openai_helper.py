@@ -3,6 +3,9 @@ import app.helper as helper
 import app.db_utility as db_utility
 import json
 from bson import ObjectId
+import tiktoken
+# import os
+# import asyncio
 
 
 # Custom JSON encoder to handle ObjectId
@@ -72,25 +75,43 @@ def openai_answer(classification, question, customer_id, chat_id):
     frequency_penalty=0,
     presence_penalty=0
   )
+  print("testing before async")
+  # # # Create an event loop for the async function C
+  # loop = asyncio.get_event_loop() 
+  #   # Run the async function C in the event loop without waiting
+  # task_C = loop.create_task(append_chat(response, customer_id, chat_id))
+  # asyncio.run(append_chat(response, customer_id, chat_id))
   append_chat(response, customer_id, chat_id)
+  print("testing after async")
   return response
 
 
+def count_number_of_token(string: str, encoding_name: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+
 def append_chat(response, customer_id, chat_id):
-  message_content = response["choices"][0]["message"]["content"]
+  message_content = response["choices"][0]["message"]["content"]  
+  chat_data = {
+    "role": "assistant",
+    "content": message_content
+  }
+  token_count = count_number_of_token(message_content, "r50k_base")
   formatted_data = {
-    "token_sie": 40,
+    "token_size": token_count,
     "timestamp": "date",
     "chat_id": chat_id,
     "account_id": "account_id",
-    "message": {
-      "role": "assistant",
-      "content": message_content
-    }
+    "chat_data": chat_data
   }
   customer_db = db_utility.get_database(customer_id)
   customer_collection = customer_db["chat_threads"]
-  result = customer_db.insert_one(formatted_data)
+  result = customer_collection.insert_one(formatted_data)
+  print("inside async")
+  return True
 
 
 # Fetching context based on classification
