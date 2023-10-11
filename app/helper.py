@@ -91,8 +91,17 @@ def retrieve_file_n_decode(sys):
         print(f"An error occurred: {e}")
         sys.exit(1)
 
+
 def generate_chatid(account_id):
     """Generate chat id using account_id and current timestamp"""
     timestamp = str(int(time.time()))
     data = account_id + timestamp
     return hashlib.md5(data.encode()).hexdigest()
+
+
+def summarize_string(input_string, max_length=50):
+    """Summarize a string based on provided max_length"""
+    if len(input_string) <= max_length:
+        return input_string
+    else:
+        return input_string[:max_length - 3] + "..."

@@ -15,7 +15,7 @@ import app.db_utility as db_utility
 from datetime import datetime
 
 
-class InputData(BaseModel):
+class QuestionData(BaseModel):
     question: str = Field(
         default=None, title="The question posted by the user"
     )
@@ -24,6 +24,15 @@ class InputData(BaseModel):
     )
     chat_id: str = Field(
         default=None, title="Chat thread id"
+    )
+    account_id: str = Field(
+        default=None, title="Customer account id"
+    )
+
+
+class HistoryList(BaseModel):
+    customer_id: str = Field(
+        default=None, title="The associated data from the user's account"
     )
     account_id: str = Field(
         default=None, title="Customer account id"
@@ -73,7 +82,7 @@ async def root():
 
 
 @app.post("/chat")
-def question(input_data: InputData):
+def question(input_data: QuestionData):
     question = input_data.question
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
@@ -105,16 +114,33 @@ def question(input_data: InputData):
             "answer": message,
         }
         chat_threads_list.append(chat_threads)
-        db_utility.insert_data_customer_db(customer_id, 'chat_threads', chat_threads_list)
+        db_utility.insert_data_customer_db(
+            customer_id, 'chat_threads', chat_threads_list)
 
     except KeyError:
         print("OpenAI response is in unexpected format")
-
 
     return {
         "message": message,
         "chat_id": chat_id
     }
+
+
+@app.post("/chat_history")
+def question(input_data: HistoryList):
+    customer_id = input_data.customer_id
+    account_id = input_data.account_id
+
+    customer_db = db_utility.get_database(customer_id)
+    chat_threads_collection = customer_db["chat_threads"]
+    chat_threads = chat_threads_collection.find({"account_id": account_id})
+
+    response = {}
+    for chat_thread in chat_threads:
+        response[chat_thread["chat_id"]] = helper.summarize_string(
+            chat_thread["chat_data"]["question"])
+
+    return response
 
 
 if __name__ == '__main__':
