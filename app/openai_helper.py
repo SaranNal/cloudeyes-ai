@@ -82,7 +82,7 @@ def openai_answer(classification, question, customer_id, chat_id):
   #   # Run the async function C in the event loop without waiting
   # task_C = loop.create_task(append_chat(response, customer_id, chat_id))
   # asyncio.run(append_chat(response, customer_id, chat_id))
-  append_chat(response, customer_id, chat_id)
+  # append_chat(response, customer_id, chat_id)
   
   print("testing after async")
   return response
