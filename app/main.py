@@ -50,20 +50,21 @@ async def get_api_key(api_key_header: str=Security(api_key_header)):
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate API KEY"
         )
 
-# @app.middleware("http")
-# async def cognito_authenticate(request: Request, call_next):
-#     try:
-#         token = request.headers["Authorization"]
-#     except KeyError:
-#         # return HTTPException(status_code=401)
-#         return JSONResponse(status_code=401, content="Authentication missing")  # or 401
 
-#     verification_of_token = cognito_validate(token)
-#     if verification_of_token:
-#         response = await call_next(request)
-#         return response
-#     else:
-#         return JSONResponse(status_code=401, content="Authentication failed")  # or 401
+@app.middleware("http")
+async def cognito_authenticate(request: Request, call_next):
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        # return HTTPException(status_code=401)
+        return JSONResponse(status_code=401, content="Authentication missing")  # or 401
+
+    verification_of_token = cognito_validate(token)
+    if verification_of_token:
+        response = await call_next(request)
+        return response
+    else:
+        return JSONResponse(status_code=401, content="Authentication failed")  # or 401
 
 
 @app.get("/")
@@ -86,7 +87,11 @@ def question(input_data: InputData):
         if 'None' in classified_list:
             return {"message": "Invalid question"}
         openai_answer = openai_helper.openai_answer(classified_list, question, customer_id, chat_id)
-        return openai_answer
+        response = {}
+        response['categories'] = classified_list
+        response['answer'] = openai_answer["choices"][0]["message"]["content"]
+        response['thread_id'] = ""
+        return response
     else:
         return {"message": "It's working"}
 
