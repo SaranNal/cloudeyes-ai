@@ -85,7 +85,7 @@ def question(input_data: InputData):
     if isinstance(classified_list, list): 
         if 'None' in classified_list:
             return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
-        openai_answer = openai_helper.openai_answer(classified_list, question, customer_id, chat_id)
+        openai_answer = openai_helper.openai_answer(classified_list, question, customer_id, chat_id, account_id)
         response = {}
         response['categories'] = classified_list
         response['answer'] = openai_answer["choices"][0]["message"]["content"]
