@@ -27,7 +27,7 @@ def get_answer(question, details):
     print("Get answer for the question based on details provided...")
     res_text = ""
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=[
             {
                 "role": "system",

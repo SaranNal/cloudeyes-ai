@@ -20,7 +20,7 @@ class ObjectIdEncoder(json.JSONEncoder):
 def classify_question(question):
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4",
     messages=[
       {
         "role": "system",
@@ -59,7 +59,7 @@ def openai_answer(classification, question, customer_id, chat_id, account_id):
   print(context)
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
+    model="gpt-4",
     messages=[
       {
         "role": "system",
