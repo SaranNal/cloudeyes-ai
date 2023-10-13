@@ -39,6 +39,18 @@ class HistoryList(BaseModel):
     )
 
 
+class HistoryItem(BaseModel):
+    customer_id: str = Field(
+        default=None, title="The associated data from the user's account"
+    )
+    account_id: str = Field(
+        default=None, title="Customer account id"
+    )
+    chat_id: str = Field(
+        default=None, title="Chat id"
+    )
+
+
 app = FastAPI()
 
 origins = ["*"]
@@ -59,6 +71,7 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate API KEY"
         )
+
 
 @app.middleware("http")
 async def cognito_authenticate(request: Request, call_next):
@@ -127,7 +140,7 @@ def question(input_data: QuestionData):
 
 
 @app.post("/chat_history")
-def question(input_data: HistoryList):
+def list_chat_history(input_data: HistoryList):
     customer_id = input_data.customer_id
     account_id = input_data.account_id
 
@@ -139,6 +152,25 @@ def question(input_data: HistoryList):
     for chat_thread in chat_threads:
         response[chat_thread["chat_id"]] = helper.summarize_string(
             chat_thread["chat_data"]["question"])
+
+    return response
+
+
+@app.post("/chat_item")
+def chat_item(input_data: HistoryItem):
+    customer_id = input_data.customer_id
+    account_id = input_data.account_id
+    chat_id = input_data.chat_id
+
+    customer_db = db_utility.get_database(customer_id)
+    chat_threads_collection = customer_db["chat_threads"]
+    chat_threads = chat_threads_collection.find(
+        {"account_id": account_id, "chat_id": chat_id})
+
+    response = {}
+    for chat_thread in chat_threads:
+        print(chat_thread)
+        response[str(chat_thread["_id"])] = chat_thread["chat_data"]
 
     return response
 
