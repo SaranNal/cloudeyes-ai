@@ -54,9 +54,9 @@ def classify_question(question):
 
 
 # Fetching context for question by passing classification 
-def openai_answer(classification, question, customer_id, chat_id):
-  context = fetch_context(classification, customer_id)
-  
+def openai_answer(classification, question, customer_id, chat_id, account_id):
+  context = fetch_context(classification, customer_id, account_id)
+  print(context)
   openai.api_key = helper.get_settings("openai_key")
   response = openai.ChatCompletion.create(
     model="gpt-3.5-turbo",
@@ -117,21 +117,23 @@ def append_chat(response, customer_id, chat_id):
 
 
 # Fetching context based on classification
-def fetch_context(classification, customer_id):
+def fetch_context(classification, customer_id, account_id):
   
   customer_db = db_utility.get_database(customer_id)
   context = ""
   doc_context = {}
+  classify_collection = ""
   
   for classify in classification:
     if classify == 'Utilization':
-      classify = 'aggregate_utilization'
-    elif classify == ('Security' or 'Recommendation'):
-      classify = 'security_recommendations'
+      classify_collection = 'aggregate_utilization'
+    elif classify in ['Security', 'Recommendation']:
+      classify_collection = 'security_recommendations'
     elif classify == ('Billing'):
-      classify = 'aggregate_billing'
-    customer_collection = customer_db[classify]
-    customer_details = customer_collection.find()
+      classify_collection = 'aggregate_billing'
+    customer_collection = customer_db[classify_collection]
+    # customer_details = customer_collection.find()
+    customer_details = customer_collection.find({'account_id': account_id})
     for document in customer_details:
       document.pop('_id', None)
       document.pop('account_id', None)
