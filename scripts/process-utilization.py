@@ -5,7 +5,7 @@ import datetime
 from dateutil.tz import tzutc
 from app.helper import dict_helper
 from collections import defaultdict
-from app.db_utility import get_customer_db
+from app.db_utility import get_database
 from botocore.exceptions import BotoCoreError
 import app.helper as helper
 
@@ -31,7 +31,7 @@ for customer_id, metric_datas in metric_data.items():
                         final_metric_data[service][instance_id][metric['Label']] = dict(
                             zip(metric['Timestamps'], metric['Values']))
 
-        customer_db = get_customer_db(customer_id)
+        customer_db = get_database(customer_id)
         daily_utilization_data.append(final_metric_data)
         print(
             '----------------------------{}----------------------------'.format(customer_id))
