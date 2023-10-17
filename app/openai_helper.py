@@ -3,6 +3,8 @@ import app.helper as helper
 import app.db_utility as db_utility
 import json
 from bson import ObjectId
+import tiktoken
+import os
 
 
 # Custom JSON encoder to handle ObjectId
@@ -50,12 +52,46 @@ def classify_question(question):
         return "Error occurred"
 
 
+# Fetching context based on classification
+def fetch_context(classification, customer_id, account_id):
+    customer_db = db_utility.get_database(customer_id)
+    context = ""
+
+    for classify in classification:
+        if classify == 'Utilization':
+            classify_collection = 'aggregate_utilization'
+        elif classify == 'Security' or classify == 'Recommendation':
+            classify_collection = 'security_recommendations'
+        elif classify == ('Billing'):
+            classify_collection = 'aggregate_billing'
+        customer_collection = customer_db[classify_collection]
+        customer_details = customer_collection.find({'account_id': account_id})
+        for document in customer_details:
+            document.pop('_id', None)
+            document.pop('account_id', None)
+            # if '_id' in document: del document['_id']
+            # if 'account_id' in document: del document['account_id']
+            context = "{} \n {} data: {}".format(
+                context, classify, json.dumps(document))
+    ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
+    context = ai_input + context
+    return context
+
+
+def count_number_of_token(string: str, encoding_name: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+
 # Fetching context for question by passing classification
 def openai_answer(classification, question, customer_id, account_id, chat_id):
     context = fetch_context(classification, customer_id, account_id)
+
     openai.api_key = helper.get_settings("openai_key")
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=[
             {
               "role": "system",
@@ -72,28 +108,24 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         frequency_penalty=0,
         presence_penalty=0
     )
-
+    print("Response from OpenAI:", response)
     return response
 
 
-# Fetching context based on classification
-def fetch_context(classification, customer_id, account_id):
+def append_chat(response, customer_id, account_id, chat_id):
+    message_content = response["choices"][0]["message"]["content"]
+    chat_data = {
+        "role": "assistant",
+        "content": message_content
+    }
+    formatted_data = {
+        "token_size": response['usage']['completion_tokens'],
+        "timestamp": "date",
+        "chat_id": chat_id,
+        "account_id": account_id,
+        "chat_data": chat_data
+    }
     customer_db = db_utility.get_database(customer_id)
-    context = ""
-
-    for classify in classification:
-        if classify == 'Utilization':
-            classify_collection = 'aggregate_utilization'
-        elif classify == ('Security' or 'Recommendation'):
-            classify_collection = 'security_recommendations'
-        elif classify == ('Billing'):
-            classify_collection = 'aggregate_billing'
-        customer_collection = customer_db[classify_collection]
-        customer_details = customer_collection.find({'account_id': account_id})
-        for document in customer_details:
-            if '_id' in document: del document['_id']
-            if 'account_id' in document: del document['account_id']
-            context = "{} \n {} data: {}".format(context, classify, json.dumps(document))
-    ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
-    context = ai_input + context
-    return context
+    customer_collection = customer_db["chat_threads"]
+    result = customer_collection.insert_one(formatted_data)
+    return True

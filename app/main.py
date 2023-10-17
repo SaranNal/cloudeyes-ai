@@ -64,7 +64,7 @@ app.add_middleware(
 api_key_header = APIKeyHeader(name="access_token", auto_error=False)
 
 
-async def get_api_key(api_key_header: str = Security(api_key_header)):
+async def get_api_key(api_key_header: str=Security(api_key_header)):
     if api_key_header == get_settings("api_key"):
         return api_key_header
     else:
@@ -72,21 +72,20 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate API KEY"
         )
 
+# @app.middleware("http")
+# async def cognito_authenticate(request: Request, call_next):
+#     try:
+#         token = request.headers["Authorization"]
+#     except KeyError:
+#         # return HTTPException(status_code=401)
+#         return JSONResponse(status_code=401, content="Authentication missing")  # or 401
 
-@app.middleware("http")
-async def cognito_authenticate(request: Request, call_next):
-    try:
-        token = request.headers["Authorization"]
-    except KeyError:
-        # return HTTPException(status_code=401)
-        return JSONResponse(status_code=401, content="Authentication missing")  # or 401
-
-    verification_of_token = cognito_validate(token)
-    if verification_of_token:
-        response = await call_next(request)
-        return response
-    else:
-        return JSONResponse(status_code=401, content="Authentication failed")  # or 401
+#     verification_of_token = cognito_validate(token)
+#     if verification_of_token:
+#         response = await call_next(request)
+#         return response
+#     else:
+#         return JSONResponse(status_code=401, content="Authentication failed")  # or 401
 
 
 @app.get("/")
@@ -100,6 +99,7 @@ def question(input_data: QuestionData):
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
+    openai_answer = []
 
     if not question:
         return {"Please pass a question"}
@@ -107,7 +107,9 @@ def question(input_data: QuestionData):
 
     if chat_id == "":
         chat_id = helper.generate_chatid(account_id)
-
+        
+    print("Chat thread id:", chat_id)
+    
     message = "Please rephrase your question or ask a relevant question!"
     try:
         if isinstance(classified_list, list):
@@ -115,7 +117,6 @@ def question(input_data: QuestionData):
                 openai_answer = openai_helper.openai_answer(
                     classified_list, question, customer_id, account_id, chat_id)
                 message = openai_answer['choices'][0]['message']['content']
-
         chat_threads_list = []
         chat_threads = helper.dict_helper()
         chat_threads["token_size"] = openai_answer['usage']['total_tokens']
@@ -126,10 +127,9 @@ def question(input_data: QuestionData):
             "question": question,
             "answer": message,
         }
-        chat_threads_list.append(chat_threads)
-        db_utility.insert_data_customer_db(
-            customer_id, 'chat_threads', chat_threads_list)
-
+        print(chat_id)
+        openai_helper.append_chat(openai_answer, customer_id, account_id, chat_id)
+        
     except KeyError:
         print("OpenAI response is in unexpected format")
 
