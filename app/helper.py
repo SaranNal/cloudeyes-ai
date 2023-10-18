@@ -1,3 +1,4 @@
+import uuid
 import openai
 from functools import lru_cache
 import pandas as pd
@@ -92,11 +93,11 @@ def retrieve_file_n_decode(sys):
         sys.exit(1)
 
 
-def generate_chatid(account_id):
+def generate_chatid(account_id, question):
     """Generate chat id using account_id and current timestamp"""
     timestamp = str(int(time.time()))
-    data = account_id + timestamp
-    return hashlib.md5(data.encode()).hexdigest()
+    data = account_id + question + timestamp
+    return str(uuid.uuid5(uuid.NAMESPACE_X500, data))
 
 
 def summarize_string(input_string, max_length=50):

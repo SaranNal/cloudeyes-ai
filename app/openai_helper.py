@@ -102,14 +102,22 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
                 "content": question
             }
         ],
+        stream=True,
         temperature=1,
-        max_tokens=256,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
     print("Response from OpenAI:", response)
-    return response
+    try:
+        for event in response:
+            print(event)
+            if "content" in event["choices"][0].delta:
+                current_response = event["choices"][0].delta.content
+                yield current_response
+    except Exception as e:
+        print("OpenAI Response (Streaming) Error: " + str(e))
+        return 503
 
 
 def append_chat(response, customer_id, account_id, chat_id):
