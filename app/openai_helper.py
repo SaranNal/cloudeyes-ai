@@ -88,14 +88,17 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 # Fetching context for question by passing classification
 def openai_answer(classification, question, customer_id, account_id, chat_id):
     context = fetch_context(classification, customer_id, account_id)
+    context_token_size = 1000
+    # useable_token_size = helper.get_settings("model_token_size") - context_token_size
+    # previous_chats = get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size)
 
     openai.api_key = helper.get_settings("openai_key")
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
             {
-              "role": "system",
-              "content": context
+                "role": "system",
+                "content": context
             },
             {
                 "role": "user",
@@ -112,14 +115,24 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
     return response
 
 
-def append_chat(response, customer_id, account_id, chat_id):
+def append_chat(response, customer_id, account_id, chat_id, question):
     message_content = response["choices"][0]["message"]["content"]
-    chat_data = {
-        "role": "assistant",
-        "content": message_content
-    }
+    chat_data = [
+        {
+            "role": "user",
+            "content": question
+        },
+        {
+            "role": "assistant",
+            "content": message_content
+        }
+    ]
+    
+    token_count = count_number_of_token(str(chat_data), "cl100k_base")
+    print("appending chat token size")
+    print(token_count)
     formatted_data = {
-        "token_size": response['usage']['completion_tokens'],
+        "token_size": token_count,
         "timestamp": "date",
         "chat_id": chat_id,
         "account_id": account_id,
@@ -129,3 +142,21 @@ def append_chat(response, customer_id, account_id, chat_id):
     customer_collection = customer_db["chat_threads"]
     result = customer_collection.insert_one(formatted_data)
     return True
+
+
+def get_previous_chat_messages(customer_id, account_id, chat_id, context):
+    print ("Previous chat messages")
+    customer_db = db_utility.get_database(customer_id)
+    customer_collection = customer_db["chat_threads"]
+    chat_data = customer_collection.find({"account_id": account_id, "chat_id": chat_id})
+    previous_chat = ""
+    for document in chat_data:
+        print(document)
+        # document.pop('_id', None)
+        # document.pop('account_id', None)
+        # if '_id' in document: del document['_id']
+        # if 'account_id' in document: del document['account_id']
+        # previous_chat = "{} \n {} data: {}".format(
+        #     previous_chat, "Previous chat", json.dumps(document))
+    os._exit()
+    return previous_chat

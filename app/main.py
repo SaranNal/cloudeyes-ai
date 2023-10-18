@@ -107,9 +107,9 @@ def question(input_data: QuestionData):
 
     if chat_id == "":
         chat_id = helper.generate_chatid(account_id)
-        
+
     print("Chat thread id:", chat_id)
-    
+
     message = "Please rephrase your question or ask a relevant question!"
     try:
         if isinstance(classified_list, list):
@@ -128,8 +128,9 @@ def question(input_data: QuestionData):
             "answer": message,
         }
         print(chat_id)
-        openai_helper.append_chat(openai_answer, customer_id, account_id, chat_id)
-        
+        openai_helper.append_chat(
+            openai_answer, customer_id, account_id, chat_id, question)
+
     except KeyError:
         print("OpenAI response is in unexpected format")
 
