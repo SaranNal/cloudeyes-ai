@@ -19,7 +19,7 @@ class ObjectIdEncoder(json.JSONEncoder):
 def classify_question(question):
     openai.api_key = helper.get_settings("openai_key")
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=[
             {
               "role": "system",
@@ -36,6 +36,7 @@ def classify_question(question):
         frequency_penalty=0,
         presence_penalty=0
     )
+    print(response)
     if response['choices'][0]['message']['content']:
         question_classify_response = response['choices'][0]['message']['content']
         # Split the string into a list if it contains commas
@@ -89,13 +90,11 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 def openai_answer(classification, question, customer_id, account_id, chat_id):
     context = fetch_context(classification, customer_id, account_id)
     context_token_size = 1000
-    # useable_token_size = helper.get_settings("model_token_size") - context_token_size
-    # previous_chats = get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size)
-
+    useable_token_size = int(helper.get_settings("model_token_size")) - context_token_size
+    previous_chats = get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size)
+    print("previous_chats:", previous_chats)
     openai.api_key = helper.get_settings("openai_key")
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
+    latest_question_n_context = [
             {
                 "role": "system",
                 "content": context
@@ -104,7 +103,12 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
                 "role": "user",
                 "content": question
             }
-        ],
+        ]
+    previous_chats.extend(latest_question_n_context)
+    print("Appending new question to previous chats", previous_chats)
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=previous_chats,
         temperature=1,
         max_tokens=256,
         top_p=1,
@@ -144,19 +148,18 @@ def append_chat(response, customer_id, account_id, chat_id, question):
     return True
 
 
-def get_previous_chat_messages(customer_id, account_id, chat_id, context):
+def get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size):
     print ("Previous chat messages")
     customer_db = db_utility.get_database(customer_id)
     customer_collection = customer_db["chat_threads"]
     chat_data = customer_collection.find({"account_id": account_id, "chat_id": chat_id})
-    previous_chat = ""
+    previous_chat = []
+    
+    total_previous_chat_token_size = 0    
     for document in chat_data:
-        print(document)
-        # document.pop('_id', None)
-        # document.pop('account_id', None)
-        # if '_id' in document: del document['_id']
-        # if 'account_id' in document: del document['account_id']
-        # previous_chat = "{} \n {} data: {}".format(
-        #     previous_chat, "Previous chat", json.dumps(document))
-    os._exit()
+        total_previous_chat_token_size += document['token_size']
+        if total_previous_chat_token_size > useable_token_size:
+            break
+        previous_chat.extend(document['chat_data'])
+    print("Previous chat token size:", total_previous_chat_token_size)
     return previous_chat
