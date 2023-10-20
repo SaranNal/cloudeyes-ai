@@ -125,6 +125,10 @@ def question(input_data: QuestionData):
     if chat_id == "":
         chat_id = helper.generate_chatid(account_id, question)
 
+    header = {
+        "classification": json.dumps(classified_list),
+        "chat_id": chat_id
+    }
     answer = openai_helper.openai_answer(
         classified_list, question, customer_id, account_id)
     message, chat_answer = itertools.tee(answer)
@@ -132,7 +136,7 @@ def question(input_data: QuestionData):
     tasks.add_task(save_chat_thread, customer_id,
                    account_id, chat_id, question, chat_answer)
 
-    return StreamingResponse(message, media_type="text/event-stream", background=tasks)
+    return StreamingResponse(message, media_type="text/event-stream", background=tasks, headers=header)
 
 
 @app.post("/chat_history")
