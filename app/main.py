@@ -15,6 +15,7 @@ from starlette.responses import JSONResponse
 import app.db_utility as db_utility
 from datetime import datetime
 import itertools
+import json
 
 
 class QuestionData(BaseModel):
@@ -122,9 +123,13 @@ def question(input_data: QuestionData):
             message, chat_reply = itertools.tee(answer)
             tasks = BackgroundTasks()
             print("appending chat")
+            header = {
+                "classification": json.dumps(classified_list),
+                "chat_id": chat_id
+            }
             tasks.add_task(openai_helper.saving_chat, chat_reply, customer_id,
                         account_id, chat_id, question)
-            return StreamingResponse(message, media_type="text/event-stream", background=tasks)
+            return StreamingResponse(message, media_type="text/event-stream", background=tasks, headers=header)
         else:
             return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
 
