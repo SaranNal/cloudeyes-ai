@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import BackgroundTasks, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
@@ -14,6 +14,7 @@ from app.authenticator.cognito import cognito_validate
 from starlette.responses import JSONResponse
 import app.db_utility as db_utility
 from datetime import datetime
+import itertools
 
 
 class QuestionData(BaseModel):
@@ -66,7 +67,7 @@ api_key_header = APIKeyHeader(name="access_token", auto_error=False)
 
 
 async def get_api_key(api_key_header: str = Security(api_key_header)):
-    if api_key_header == get_settings("api_key"):
+    if api_key_header == helper.get_settings("api_key"):
         return api_key_header
     else:
         raise HTTPException(
@@ -94,13 +95,28 @@ async def root():
     return {"message": "It's working"}
 
 
+def save_chat_thread(customer_id, account_id, chat_id, question, answer):
+    print("saving chat thread", customer_id,
+          account_id, chat_id, question, type(answer))
+    chat_threads_list = []
+    chat_threads = helper.dict_helper()
+    # chat_threads["token_size"] = openai_answer['usage']['total_tokens']
+    chat_threads["timestamp"] = datetime.now()
+    chat_threads["chat_id"] = chat_id
+    chat_threads["account_id"] = account_id,
+    chat_threads["chat_data"] = {
+        'question': question, 'answer': ''.join(answer)}
+    chat_threads_list.append(chat_threads)
+    db_utility.insert_data_customer_db(
+        customer_id, 'chat_threads', chat_threads_list)
+
+
 @app.post("/chat")
 def question(input_data: QuestionData):
     question = input_data.question
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
-    openai_answer = []
 
     if not question:
         return {"Please pass a question"}
@@ -109,42 +125,14 @@ def question(input_data: QuestionData):
     if chat_id == "":
         chat_id = helper.generate_chatid(account_id, question)
 
-    print("Chat thread id:", chat_id)
+    answer = openai_helper.openai_answer(
+        classified_list, question, customer_id, account_id)
+    message, chat_answer = itertools.tee(answer)
+    tasks = BackgroundTasks()
+    tasks.add_task(save_chat_thread, customer_id,
+                   account_id, chat_id, question, chat_answer)
 
-    message = "Please rephrase your question or ask a relevant question!"
-    # try:
-
-    #     if isinstance(classified_list, list):
-    #         if 'None' not in classified_list:
-    #             # openai_answer = openai_helper.openai_answer(
-    #             #     classified_list, question, customer_id, account_id, chat_id)
-    #             # message = openai_answer['choices'][0]['message']['content']
-    #     # chat_threads_list = []
-    #     # chat_threads = helper.dict_helper()
-    #     # chat_threads["token_size"] = openai_answer['usage']['total_tokens']
-    #     # chat_threads["timestamp"] = datetime.now()
-    #     # chat_threads["chat_id"] = chat_id
-    #     # chat_threads["account_id"] = account_id,
-    #     # chat_threads["chat_data"] = {
-    #     #     "question": question,
-    #     #     "answer": message,
-    #     # }
-    #     # chat_threads_list.append(chat_threads)
-    #     # db_utility.insert_data_customer_db(
-    #     #     customer_id, 'chat_threads', chat_threads_list)
-    #     # openai_helper.append_chat(
-    #     #     openai_answer, customer_id, account_id, chat_id)
-
-    # except KeyError:
-    #     print("OpenAI response is in unexpected format")
-
-    # res = {
-    #     "message": openai_answer,
-    #     "chat_id": chat_id
-    # }
-
-    return StreamingResponse(openai_helper.openai_answer(
-                    classified_list, question, customer_id, account_id, chat_id), media_type="text/event-stream")
+    return StreamingResponse(message, media_type="text/event-stream", background=tasks)
 
 
 @app.post("/chat_history")

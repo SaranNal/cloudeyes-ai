@@ -56,25 +56,31 @@ def classify_question(question):
 def fetch_context(classification, customer_id, account_id):
     customer_db = db_utility.get_database(customer_id)
     context = ""
+    classify_collection = ""
 
-    for classify in classification:
-        if classify == 'Utilization':
-            classify_collection = 'aggregate_utilization'
-        elif classify == 'Security' or classify == 'Recommendation':
-            classify_collection = 'security_recommendations'
-        elif classify == ('Billing'):
-            classify_collection = 'aggregate_billing'
-        customer_collection = customer_db[classify_collection]
-        customer_details = customer_collection.find({'account_id': account_id})
-        for document in customer_details:
-            document.pop('_id', None)
-            document.pop('account_id', None)
-            # if '_id' in document: del document['_id']
-            # if 'account_id' in document: del document['account_id']
-            context = "{} \n {} data: {}".format(
-                context, classify, json.dumps(document))
-    ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
-    context = ai_input + context
+    try:
+        for classify in classification:
+            if classify == 'Utilization':
+                classify_collection = 'aggregate_utilization'
+            elif classify == 'Security' or classify == 'Recommendation':
+                classify_collection = 'security_recommendations'
+            elif classify == ('Billing'):
+                classify_collection = 'aggregate_billing'
+
+            if classify_collection != "":
+                customer_collection = customer_db[classify_collection]
+                customer_details = customer_collection.find(
+                    {'account_id': account_id})
+                for document in customer_details:
+                    document.pop('_id', None)
+                    document.pop('account_id', None)
+                    context = "{} \n {} data: {}".format(
+                        context, classify, json.dumps(document))
+        ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
+        context = ai_input + context
+    except Exception as e:
+        print("Exception while fetching context", e)
+
     return context
 
 
@@ -86,38 +92,40 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 
 
 # Fetching context for question by passing classification
-def openai_answer(classification, question, customer_id, account_id, chat_id):
-    context = fetch_context(classification, customer_id, account_id)
+def openai_answer(classification, question, customer_id, account_id):
+    message = "Please rephrase your question or ask a relevant question!"
+    if isinstance(classification, list) and 'None' not in classification:
+        context = fetch_context(classification, customer_id, account_id)
 
-    openai.api_key = helper.get_settings("openai_key")
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {
-              "role": "system",
-              "content": context
-            },
-            {
-                "role": "user",
-                "content": question
-            }
-        ],
-        stream=True,
-        temperature=1,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-    print("Response from OpenAI:", response)
-    try:
-        for event in response:
-            print(event)
-            if "content" in event["choices"][0].delta:
-                current_response = event["choices"][0].delta.content
-                yield current_response
-    except Exception as e:
-        print("OpenAI Response (Streaming) Error: " + str(e))
-        return 503
+        openai.api_key = helper.get_settings("openai_key")
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": context
+                },
+                {
+                    "role": "user",
+                    "content": question
+                }
+            ],
+            stream=True,
+            temperature=1,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0
+        )
+        try:
+            for event in response:
+                if "content" in event["choices"][0].delta:
+                    current_response = event["choices"][0].delta.content
+                    yield current_response
+        except Exception as e:
+            print("OpenAI Response (Streaming) Error: " + str(e))
+            yield message
+    else:
+        yield message
 
 
 def append_chat(response, customer_id, account_id, chat_id):
