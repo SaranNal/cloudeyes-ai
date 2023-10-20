@@ -110,17 +110,23 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         model="gpt-4",
         messages=previous_chats,
         temperature=1,
+        stream=True,
         max_tokens=256,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
-    print("Response from OpenAI:", response)
-    return response
+    try:
+        for event in response:
+            if "content" in event["choices"][0].delta:
+                current_response = event["choices"][0].delta.content
+                yield current_response
+    except Exception as e:
+        print("OpenAI Response (Streaming) Error: " + str(e))
+        yield "Error occurred"
 
 
-def append_chat(response, customer_id, account_id, chat_id, question):
-    message_content = response["choices"][0]["message"]["content"]
+def saving_chat(reply, customer_id, account_id, chat_id, question):
     chat_data = [
         {
             "role": "user",
@@ -128,7 +134,7 @@ def append_chat(response, customer_id, account_id, chat_id, question):
         },
         {
             "role": "assistant",
-            "content": message_content
+            "content": ''.join(reply)
         }
     ]
     

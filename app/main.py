@@ -1,5 +1,6 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
 from fastapi import Security, HTTPException, Depends
 from starlette.status import HTTP_403_FORBIDDEN
@@ -13,6 +14,7 @@ from app.authenticator.cognito import cognito_validate
 from starlette.responses import JSONResponse
 import app.db_utility as db_utility
 from datetime import datetime
+import itertools
 
 
 class QuestionData(BaseModel):
@@ -115,32 +117,19 @@ def question(input_data: QuestionData):
         if isinstance(classified_list, list):
             if 'None' in classified_list:
                 return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
-            openai_answer = openai_helper.openai_answer(
+            answer = openai_helper.openai_answer(
                         classified_list, question, customer_id, account_id, chat_id)
-            message = openai_answer['choices'][0]['message']['content']
-            chat_threads_list = []
-            chat_threads = helper.dict_helper()
-            chat_threads["token_size"] = openai_answer['usage']['total_tokens']
-            chat_threads["timestamp"] = datetime.now()
-            chat_threads["chat_id"] = chat_id
-            chat_threads["account_id"] = account_id,
-            chat_threads["chat_data"] = {
-                "question": question,
-                "answer": message,
-            }
-            print(chat_id)
-            openai_helper.append_chat(
-                openai_answer, customer_id, account_id, chat_id, question)
+            message, chat_reply = itertools.tee(answer)
+            tasks = BackgroundTasks()
+            print("appending chat")
+            tasks.add_task(openai_helper.saving_chat, chat_reply, customer_id,
+                        account_id, chat_id, question)
+            return StreamingResponse(message, media_type="text/event-stream", background=tasks)
         else:
             return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
 
     except KeyError:
         print("OpenAI response is in unexpected format")
-
-    return {
-        "message": message,
-        "chat_id": chat_id
-    }
 
 
 @app.post("/chat_history")
