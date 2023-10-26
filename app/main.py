@@ -116,8 +116,10 @@ def question(input_data: QuestionData):
     message = "Please rephrase your question or ask a relevant question!"
     try:
         if isinstance(classified_list, list):
-            if 'None' in classified_list:
+            if 'None' in classified_list and chat_id == "":
                 return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
+            elif 'None' in classified_list:
+                classified_list = ["Utilization"]
             answer = openai_helper.openai_answer(
                         classified_list, question, customer_id, account_id, chat_id)
             message, chat_reply = itertools.tee(answer)
