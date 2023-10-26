@@ -57,7 +57,7 @@ def classify_question(question):
 def fetch_context(classification, customer_id, account_id):
     customer_db = db_utility.get_database(customer_id)
     context = ""
-
+    total_tokens = 0
     for classify in classification:
         if classify == 'Utilization':
             classify_collection = 'aggregate_utilization'
@@ -70,13 +70,13 @@ def fetch_context(classification, customer_id, account_id):
         for document in customer_details:
             document.pop('_id', None)
             document.pop('account_id', None)
-            # if '_id' in document: del document['_id']
-            # if 'account_id' in document: del document['account_id']
+            token_size = document.pop('token_size', 0)
+            total_tokens += token_size
             context = "{} \n {} data: {}".format(
                 context, classify, json.dumps(document))
     ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
     context = ai_input + context
-    return context
+    return context,  total_tokens
 
 
 def count_number_of_token(string: str, encoding_name: str) -> int:
@@ -88,8 +88,7 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 
 # Fetching context for question by passing classification
 def openai_answer(classification, question, customer_id, account_id, chat_id):
-    context = fetch_context(classification, customer_id, account_id)
-    context_token_size = 1000
+    context, context_token_size = fetch_context(classification, customer_id, account_id)
     useable_token_size = int(helper.get_settings("model_token_size")) - context_token_size
     previous_chats = get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
@@ -120,7 +119,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         for event in response:
             if "content" in event["choices"][0].delta:
                 current_response = event["choices"][0].delta.content
-                yield current_response
+                yield "data: " + current_response + "\n\n"
     except Exception as e:
         print("OpenAI Response (Streaming) Error: " + str(e))
         yield "Error occurred"
