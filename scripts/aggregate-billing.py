@@ -1,7 +1,9 @@
+import json
 import pandas as pd
 from app.helper import dict_helper, is_date
 from app.db_utility import get_database, insert_data_customer_db
 from datetime import datetime, timedelta
+from app.openai_helper import count_number_of_token
 
 
 def aggregate_timeseries(data, range='year'):
@@ -58,7 +60,6 @@ for customer in customers:
         }
     ]
     billing_data = daily_billing.aggregate(pipeline)
-    
 
     # Iterate through the list of dictionaries
     for accounts in billing_data:
@@ -82,10 +83,13 @@ for customer in customers:
         }
         aggregated_billing_data = pd.DataFrame(mean_values).transpose()
         aggregated_billing_data = aggregated_billing_data.to_dict()
+        aggregated_billing_data['token_size'] = count_number_of_token(
+            json.dumps(aggregated_billing_data, separators=(',', ':')), 'cl100k_base')
         aggregated_billing_data['account_id'] = account_id
 
         aggregated_billing.append(aggregated_billing_data)
 
-        insert_data_customer_db(customer_id, 'aggregate_billing', aggregated_billing, {'account_id': account_id})
+        insert_data_customer_db(customer_id, 'aggregate_billing', aggregated_billing, {
+                                'account_id': account_id})
 
 print("Aggregated billing data for all the customers")

@@ -1,7 +1,9 @@
+import json
 import pandas as pd
 from app.helper import dict_helper, is_date
 from app.db_utility import get_database, insert_data_customer_db
 from datetime import datetime, timedelta
+from app.openai_helper import count_number_of_token
 
 
 def aggregate_timeseries(data, range='year'):
@@ -98,9 +100,12 @@ for customer in customers:
                 current_dict = current_dict.setdefault(k, {})
             current_dict[keys[-1]] = value
 
+        reconstructed_dict['token_size'] = count_number_of_token(
+            json.dumps(reconstructed_dict, separators=(',', ':')), 'cl100k_base')
         reconstructed_dict['account_id'] = account_id
         aggregated_utilization.append(reconstructed_dict)
 
-        insert_data_customer_db(customer_id, 'aggregate_utilization', aggregated_utilization, {'account_id': account_id})
+        insert_data_customer_db(customer_id, 'aggregate_utilization', aggregated_utilization, {
+                                'account_id': account_id})
 
 print("Aggregated utilization data for all customers")

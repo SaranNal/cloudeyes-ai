@@ -102,14 +102,13 @@ def question(input_data: QuestionData):
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
-    openai_answer = []
 
     if not question:
         return {"Please pass a question"}
     classified_list = openai_helper.classify_question(question)
 
     if chat_id == "":
-        chat_id = helper.generate_chatid(account_id)
+        chat_id = helper.generate_chatid(account_id, question)
 
     print("Chat thread id:", chat_id)
 
