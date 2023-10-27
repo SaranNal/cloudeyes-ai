@@ -16,6 +16,7 @@ import app.db_utility as db_utility
 from datetime import datetime
 import itertools
 import json
+import time
 
 
 class QuestionData(BaseModel):
@@ -176,3 +177,15 @@ def chat_item(input_data: HistoryItem):
 
 if __name__ == '__main__':
     uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True)
+
+
+@app.post("/stream-test")
+def stream_test():
+    return StreamingResponse(stream_gen(), media_type="text/event-stream")
+
+
+def stream_gen():
+    message = "lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat."
+    for word in message.split(" "):
+        time.sleep(0.1)
+        yield  word + " "
