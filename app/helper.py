@@ -76,7 +76,7 @@ def retrieve_file_n_decode(sys):
 
     # Initialize the S3 client
     s3 = boto3.client('s3')
-    bucket_name = get_settings()
+    bucket_name = get_settings("cloudeyes")
 
     try:
         # Fetch the file and read its contents
