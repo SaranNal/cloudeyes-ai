@@ -24,3 +24,4 @@ for customer_id, billing_data in billing_datas.items():
     result = daily_billing.insert_many(final_billing)
     print('Mongo insertion id: {}'.format(result.inserted_ids))
     print('--------------------------------------------------------')
+    metadata = helper.move_processed_fie(sys)
