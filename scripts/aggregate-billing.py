@@ -5,32 +5,6 @@ from app.db_utility import get_database, insert_data_customer_db
 from datetime import datetime, timedelta
 from app.openai_helper import count_number_of_token
 
-
-def aggregate_timeseries(data, range='year'):
-    """Function to aggregate a DataFrame to different time frequencies"""
-    frame = pd.DataFrame(data)
-    frame.index = pd.to_datetime(frame.index)
-
-    range_mapping = {
-        'year': 365,
-        'month': 30,
-        'week': 7
-    }
-    filtered_frame = frame[frame.index > frame.index.max(
-    ) - pd.DateOffset(days=range_mapping[range])]
-
-    # Calculate the mean for the last 12 months and 30 days
-    last_12_month_mean = filtered_frame.last('12M').mean()
-    last_30_days_mean = filtered_frame.last('30D').mean()
-
-    mean_values = {
-        'last_12_months': last_12_month_mean.round(2),
-        'last_30_days': last_30_days_mean.round(2)
-    }
-    resampled_data = pd.DataFrame(mean_values).transpose()
-    return resampled_data
-
-
 # Get the admin database
 admin_db = get_database('admin')
 customers = admin_db['customers'].find()
