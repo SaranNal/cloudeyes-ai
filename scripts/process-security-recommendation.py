@@ -3,12 +3,14 @@ import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
 from app.db_utility import get_customer_db
+import app.helper as helper
+import sys
 
-with open('recommendation.json') as recommendation_file:
-    recommendations_unprocessed = json.load(recommendation_file)
+recommendations_unprocessed = helper.retrieve_file_n_decode(sys)
 
 
 def dict_helper(): return defaultdict(dict_helper)
+
 
 attributes = ["name", "description", "metadata"]
 

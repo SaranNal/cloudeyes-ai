@@ -2,10 +2,11 @@ import json
 import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
-from app.db_utility import get_admin_db
+from app.db_utility import get_database
+import app.helper as helper
+import sys
 
-with open('generic_metadata.json') as metadata_file:
-    metadata = json.load(metadata_file)
+metadata = helper.retrieve_file_n_decode(sys)
 
 ec2_attributes = ["intelTurboAvailable", "memory", "dedicatedEbsThroughput", "vcpu", "storage", "instanceFamily", "operatingSystem",
                   "physicalProcessor", "clockSpeed", "ecu", "networkPerformance", "gpuMemory", "tenancy", "processorArchitecture"]
@@ -14,6 +15,7 @@ rds_attributes = ["instanceTypeFamily", "memory", "vcpu", "storage", "instanceFa
 
 
 def dict_helper(): return defaultdict(dict_helper)
+
 
 final_metadata = []
 generic_metadata = dict_helper()
@@ -31,7 +33,7 @@ for instance_name, metadatas in metadata.items():
                 generic_metadata[instance_name]['pricing'][term_type][term_id][price_id]['price'] = price_detail['pricePerUnit']['USD']
 
 final_metadata.append(generic_metadata)
-admin_db = get_admin_db()
+admin_db = get_database('admin')
 print('Generic metadata: {}'.format(
     json.dumps(final_metadata)))
 generic_metadata_collection = admin_db['generic_metadata']

@@ -2,11 +2,11 @@ import json
 import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
-from app.db_utility import get_customer_db
+from app.db_utility import get_database
+import app.helper as helper
+import sys
 
-with open('daily-billing.json') as billing_file:
-    billing_datas = json.load(billing_file)
-
+billing_datas = helper.retrieve_file_n_decode(sys)
 
 for customer_id, billing_data in billing_datas.items():
     final_billing = []
@@ -15,7 +15,7 @@ for customer_id, billing_data in billing_datas.items():
                               for k, v in billing['billing'].items()}
         final_billing.append(billing)
 
-    customer_db = get_customer_db(customer_id)
+    customer_db = get_database(customer_id)
     print(
         '----------------------------{}----------------------------'.format(customer_id))
     print('Billing data: {}'.format(
