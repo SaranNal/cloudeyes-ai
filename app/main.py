@@ -16,6 +16,7 @@ import app.db_utility as db_utility
 from datetime import datetime
 import itertools
 import json
+import time
 
 
 class QuestionData(BaseModel):
@@ -115,8 +116,10 @@ def question(input_data: QuestionData):
     message = "Please rephrase your question or ask a relevant question!"
     try:
         if isinstance(classified_list, list):
-            if 'None' in classified_list:
+            if 'None' in classified_list and chat_id == "":
                 return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
+            elif 'None' in classified_list:
+                classified_list = ["Utilization"]
             answer = openai_helper.openai_answer(
                         classified_list, question, customer_id, account_id, chat_id)
             message, chat_reply = itertools.tee(answer)
@@ -174,4 +177,15 @@ def chat_item(input_data: HistoryItem):
 
 if __name__ == '__main__':
     uvicorn.run("api:app", host="0.0.0.0", port=8080, reload=True)
-# testing the branch new
+
+
+@app.post("/stream-test")
+def stream_test():
+    return StreamingResponse(stream_gen(), media_type="text/event-stream")
+
+
+def stream_gen():
+    message = "lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat. lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam, quaerat."
+    for word in message.split(" "):
+        time.sleep(0.1)
+        yield "data: " + word + "\n\n"

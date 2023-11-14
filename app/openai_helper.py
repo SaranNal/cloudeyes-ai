@@ -74,7 +74,7 @@ def fetch_context(classification, customer_id, account_id):
             total_tokens += token_size
             context = "{} \n {} data: {}".format(
                 context, classify, json.dumps(document))
-    ai_input = "You are a cloud cost expert. You will be auditing aws account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific."
+    ai_input = "You are a cloud cost expert. You will be auditing AWS account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific. You should excel as a Cloud cost expert, answering questions exclusively within your domain, and disregarding those outside of it."
     context = ai_input + context
     return context,  total_tokens
 

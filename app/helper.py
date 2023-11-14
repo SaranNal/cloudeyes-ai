@@ -76,10 +76,11 @@ def retrieve_file_n_decode(sys):
 
     # Initialize the S3 client
     s3 = boto3.client('s3')
-    bucket_name = get_settings()
+    bucket_name = get_settings("bucket_name")
 
     try:
         # Fetch the file and read its contents
+        print(bucket_name)
         obj = s3.get_object(Bucket=bucket_name, Key=file_key)
         metric_data = json.loads(obj['Body'].read().decode('utf-8'))
         return metric_data
