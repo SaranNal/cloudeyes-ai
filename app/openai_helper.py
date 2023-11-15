@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 import app.helper as helper
 import app.db_utility as db_utility
 import json
@@ -17,8 +17,10 @@ class ObjectIdEncoder(json.JSONEncoder):
 
 
 def classify_question(question):
-    openai.api_key = helper.get_settings("openai_key")
-    response = openai.ChatCompletion.create(
+    client = OpenAI(
+        api_key=helper.get_settings("openai_key"),
+    )
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
             {
@@ -36,9 +38,10 @@ def classify_question(question):
         frequency_penalty=0,
         presence_penalty=0
     )
+    print('------------------classify_question---------------------')
     print(response)
-    if response['choices'][0]['message']['content']:
-        question_classify_response = response['choices'][0]['message']['content']
+    if response.choices[0].message.content:
+        question_classify_response = response.choices[0].message.content
         # Split the string into a list if it contains commas
         if ',' in question_classify_response:
             classified_list = question_classify_response.split(',')
@@ -50,7 +53,7 @@ def classify_question(question):
                 classified_list = "Unable to parse the question"
         return classified_list
     else:
-        return "Error occurred"
+        return "Error occurred in classification"
 
 
 # Fetching context based on classification
@@ -88,44 +91,50 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 
 # Fetching context for question by passing classification
 def openai_answer(classification, question, customer_id, account_id, chat_id):
-    context, context_token_size = fetch_context(classification, customer_id, account_id)
-    useable_token_size = int(helper.get_settings("model_token_size")) - context_token_size
-    previous_chats = get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size)
+    context, context_token_size = fetch_context(
+        classification, customer_id, account_id)
+    useable_token_size = int(helper.get_settings(
+        "model_token_size")) - context_token_size
+    previous_chats = get_previous_chat_messages(
+        customer_id, account_id, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
-    openai.api_key = helper.get_settings("openai_key")
+    client = OpenAI(
+        api_key=helper.get_settings("openai_key"),
+    )
     latest_question_n_context = [
-            {
-                "role": "system",
-                "content": context
-            },
-            {
-                "role": "user",
-                "content": question
-            }
-        ]
+        {
+            "role": "system",
+            "content": context
+        },
+        {
+            "role": "user",
+            "content": question
+        }
+    ]
     previous_chats.extend(latest_question_n_context)
     print("Appending new question to previous chats", previous_chats)
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=previous_chats,
         temperature=1,
         stream=True,
-        max_tokens=256,
         top_p=1,
         frequency_penalty=0,
         presence_penalty=0
     )
     try:
-        for event in response:
-            if "content" in event["choices"][0].delta:
-                current_response = event["choices"][0].delta.content
-                yield "data: " + current_response + "\n\n"
+        for chunk in response:
+            if not chunk.choices:
+                continue
+            current_response = chunk.choices[0].delta.content
+            yield "data: " + current_response + "\n\n"
     except Exception as e:
         print("OpenAI Response (Streaming) Error: " + str(e))
-        yield "Error occurred"
+        yield "Error occurred in answer"
 
 
 def saving_chat(reply, customer_id, account_id, chat_id, question):
+    reply_response = ''.join(reply).replace("data:", "").replace("\n\n", "")
     chat_data = [
         {
             "role": "user",
@@ -133,10 +142,10 @@ def saving_chat(reply, customer_id, account_id, chat_id, question):
         },
         {
             "role": "assistant",
-            "content": ''.join(reply)
+            "content": reply_response
         }
     ]
-    
+
     token_count = count_number_of_token(str(chat_data), "cl100k_base")
     print("appending chat token size")
     print(token_count)
@@ -154,13 +163,14 @@ def saving_chat(reply, customer_id, account_id, chat_id, question):
 
 
 def get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size):
-    print ("Previous chat messages")
+    print("Previous chat messages")
     customer_db = db_utility.get_database(customer_id)
     customer_collection = customer_db["chat_threads"]
-    chat_data = customer_collection.find({"account_id": account_id, "chat_id": chat_id})
+    chat_data = customer_collection.find(
+        {"account_id": account_id, "chat_id": chat_id})
     previous_chat = []
-    
-    total_previous_chat_token_size = 0    
+
+    total_previous_chat_token_size = 0
     for document in chat_data:
         total_previous_chat_token_size += document['token_size']
         if total_previous_chat_token_size > useable_token_size:
