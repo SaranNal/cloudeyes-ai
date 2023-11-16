@@ -5,6 +5,7 @@ import json
 from bson import ObjectId
 import tiktoken
 import os
+from datetime import datetime
 
 
 # Custom JSON encoder to handle ObjectId
@@ -134,7 +135,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
 
 
 def saving_chat(reply, customer_id, account_id, chat_id, question):
-    reply_response = ''.join(reply).replace("data:", "").replace("\n\n", "")
+    reply_response = ''.join(reply).replace("data: ", "").replace("\n\n", "")
     chat_data = [
         {
             "role": "user",
@@ -147,18 +148,16 @@ def saving_chat(reply, customer_id, account_id, chat_id, question):
     ]
 
     token_count = count_number_of_token(str(chat_data), "cl100k_base")
-    print("appending chat token size")
-    print(token_count)
     formatted_data = {
         "token_size": token_count,
-        "timestamp": "date",
+        "timestamp": datetime.now(),
         "chat_id": chat_id,
         "account_id": account_id,
         "chat_data": chat_data
     }
     customer_db = db_utility.get_database(customer_id)
     customer_collection = customer_db["chat_threads"]
-    result = customer_collection.insert_one(formatted_data)
+    customer_collection.insert_one(formatted_data)
     return True
 
 
