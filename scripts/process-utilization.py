@@ -3,14 +3,13 @@ import json
 import boto3
 from datetime import datetime
 from dateutil.tz import tzutc
-from app.helper import dict_helper
+from app.helper import dict_helper, retrieve_file_n_decode
 from collections import defaultdict
 from app.db_utility import get_database
 from botocore.exceptions import BotoCoreError
-import app.helper as helper
 
 # Retrieve and decode metric data
-metric_data = helper.retrieve_file_n_decode(sys)
+metric_data = retrieve_file_n_decode(sys)
 
 # Create metadata dictionaries for different services
 metadata = dict_helper()
@@ -62,13 +61,13 @@ for customer_id, metric_datas in metric_data.items():
         for metric_date, formatted_metric in tmp_metric_data.items():
             final_metric_data = formatted_metric
             final_metric_data['account_id'] = account_id
-            final_metric_data['date'] = str(metric_date)
+            final_metric_data['date'] = metric_date
             daily_utilization_data.append(final_metric_data)
 
     # Insert data into the respective customer database
     print('----------------------------{}----------------------------'.format(customer_id))
     print('Daily utilization data: {}'.format(
-        json.dumps(daily_utilization_data)))
+        json.dumps(daily_utilization_data, default=str)))
     customer_db = get_database(customer_id)
     daily_utilization = customer_db['daily_utilization']
     result = daily_utilization.insert_many(daily_utilization_data)
