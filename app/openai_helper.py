@@ -66,7 +66,7 @@ def fetch_context(classification, customer_id, account_id):
         if classify == 'Utilization':
             classify_collection = 'aggregate_utilization'
         elif classify == 'Security' or classify == 'Recommendation':
-            classify_collection = 'security_recommendations'
+            classify_collection = 'aggregate_security_recommendations'
         elif classify == ('Billing'):
             classify_collection = 'aggregate_billing'
         customer_collection = customer_db[classify_collection]
@@ -80,7 +80,7 @@ def fetch_context(classification, customer_id, account_id):
                 context, classify, json.dumps(document))
     ai_input = "You are a cloud cost expert. You will be auditing AWS account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific. You should excel as a Cloud cost expert, answering questions exclusively within your domain, and disregarding those outside of it."
     context = ai_input + context
-    return context,  total_tokens
+    return context, total_tokens
 
 
 def count_number_of_token(string: str, encoding_name: str) -> int:

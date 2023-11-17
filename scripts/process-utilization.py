@@ -3,7 +3,7 @@ import json
 import boto3
 from datetime import datetime
 from dateutil.tz import tzutc
-from app.helper import dict_helper, retrieve_file_n_decode
+from app.helper import dict_helper, retrieve_file_n_decode, move_processed_fie
 from collections import defaultdict
 from app.db_utility import get_database
 from botocore.exceptions import BotoCoreError
@@ -73,3 +73,4 @@ for customer_id, metric_datas in metric_data.items():
     result = daily_utilization.insert_many(daily_utilization_data)
     print('Mongo insertion id: {}'.format(result.inserted_ids))
     print('--------------------------------------------------------')
+    metadata = move_processed_fie(sys)

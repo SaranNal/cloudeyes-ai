@@ -105,3 +105,32 @@ def summarize_string(input_string, max_length=50):
         return input_string
     else:
         return input_string[:max_length - 3] + "..."
+
+
+def move_processed_fie(sys):
+    # Fetching the File name
+    if len(sys.argv) > 1:
+        source_key = sys.argv[1]
+        print(f"Processing file: {source_key}")
+    else:
+        print("No S3 file name provided")
+        sys.exit(1)
+
+    # Initialize the S3 client
+    s3 = boto3.client('s3')
+    bucket_name = get_settings("bucket_name")
+
+    try:
+        # Fetch the file and read its contents
+        destination_key = source_key.replace("/raw/", "/processed/")  # Replace only the first occurrence
+        
+        # Copy the object from the source to the destination
+        s3.copy_object(
+            CopySource={'Bucket': bucket_name, 'Key': source_key},
+            Bucket=bucket_name,
+            Key=destination_key
+        )
+        s3.delete_object(Bucket=bucket_name, Key=source_key)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)

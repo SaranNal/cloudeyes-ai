@@ -3,7 +3,8 @@ import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
 from app.db_utility import get_database
-from app.helper import dict_helper, retrieve_file_n_decode
+from app.helper import dict_helper, retrieve_file_n_decode, move_processed_fie
+
 import sys
 from datetime import datetime
 
@@ -32,3 +33,4 @@ for customer_id, accounts_list in billing_datas.items():
         result = daily_billing.insert_many(final_billing)
         print('Mongo insertion id: {}'.format(result.inserted_ids))
         print('--------------------------------------------------------')
+    metadata = move_processed_fie(sys)

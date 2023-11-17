@@ -40,3 +40,4 @@ generic_metadata_collection = admin_db['generic_metadata']
 result = generic_metadata_collection.insert_many(final_metadata)
 print('Mongo insertion id: {}'.format(result.inserted_ids))
 print('--------------------------------------------------------')
+metadata = helper.move_processed_fie(sys)

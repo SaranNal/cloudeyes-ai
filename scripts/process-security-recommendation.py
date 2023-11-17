@@ -37,3 +37,4 @@ for customer_id, accounts_data in recommendations_unprocessed.items():
     result = security_recommendations.insert_many(preprocessed_recommendations)
     print('Mongo insertion id: {}'.format(result.inserted_ids))
     print('--------------------------------------------------------')
+    metadata = helper.move_processed_fie(sys)
