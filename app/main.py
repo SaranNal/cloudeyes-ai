@@ -68,7 +68,7 @@ app.add_middleware(
 api_key_header = APIKeyHeader(name="access_token", auto_error=False)
 
 
-async def get_api_key(api_key_header: str=Security(api_key_header)):
+async def get_api_key(api_key_header: str = Security(api_key_header)):
     if api_key_header == get_settings("api_key"):
         return api_key_header
     else:
@@ -121,7 +121,7 @@ def question(input_data: QuestionData):
             elif 'None' in classified_list:
                 classified_list = ["Utilization"]
             answer = openai_helper.openai_answer(
-                        classified_list, question, customer_id, account_id, chat_id)
+                classified_list, question, customer_id, account_id, chat_id)
             message, chat_reply = itertools.tee(answer)
             tasks = BackgroundTasks()
             print("appending chat")
@@ -130,7 +130,7 @@ def question(input_data: QuestionData):
                 "chat_id": chat_id
             }
             tasks.add_task(openai_helper.saving_chat, chat_reply, customer_id,
-                        account_id, chat_id, question)
+                           account_id, chat_id, question)
             return StreamingResponse(message, media_type="text/event-stream", background=tasks, headers=header)
         else:
             return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
@@ -146,12 +146,25 @@ def list_chat_history(input_data: HistoryList):
 
     customer_db = db_utility.get_database(customer_id)
     chat_threads_collection = customer_db["chat_threads"]
-    chat_threads = chat_threads_collection.find({"account_id": account_id})
+    # group by chat_id, sort by timestamp asc and get one record
+    chat_threads = chat_threads_collection.aggregate([
+        {'$match': {'account_id': account_id}},
+        {'$sort': {'timestamp': 1}},
+        {
+            '$group': {
+                '_id': '$chat_id',
+                'doc': {'$first': '$$ROOT'}
+            }
+        }
+    ])
 
     response = {}
-    for chat_thread in chat_threads:
-        response[chat_thread["chat_id"]] = helper.summarize_string(
-            chat_thread["chat_data"]["question"])
+    try:
+        for chat_thread in chat_threads:
+            response[chat_thread["doc"]["chat_id"]] = helper.summarize_string(
+                chat_thread["doc"]["chat_data"][0]['content'])
+    except Exception as err:
+        print('Unable to generate chat history', err)
 
     return response
 
@@ -167,10 +180,13 @@ def chat_item(input_data: HistoryItem):
     chat_threads = chat_threads_collection.find(
         {"account_id": account_id, "chat_id": chat_id})
 
-    response = {}
+    response = []
     for chat_thread in chat_threads:
-        print(chat_thread)
-        response[str(chat_thread["_id"])] = chat_thread["chat_data"]
+        chat_item = {}
+        chat_data = chat_thread['chat_data']
+        chat_item['question'] = chat_data[0]['content']
+        chat_item['answer'] = chat_data[1]['content']
+        response.append(chat_item)
 
     return response
 
