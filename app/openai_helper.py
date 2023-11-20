@@ -124,11 +124,22 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         presence_penalty=0
     )
     try:
+        i = 0
         for chunk in response:
             if not chunk.choices:
                 continue
+
             current_response = chunk.choices[0].delta.content
-            yield "data: " + current_response + "\n\n"
+            if current_response:
+                i += 1
+                res = {
+                    'answer': current_response,
+                }
+                # append the chat id and classification only the first time
+                if i < 2:
+                    res['chat_id'] = chat_id,
+                    res['classification'] = classification
+                yield 'data: {}\n\n'.format(json.dumps(res))
     except Exception as e:
         print("OpenAI Response (Streaming) Error: " + str(e))
         yield "Error occurred in answer"

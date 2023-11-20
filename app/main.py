@@ -126,8 +126,10 @@ def question(input_data: QuestionData):
             tasks = BackgroundTasks()
             print("appending chat")
             header = {
-                "classification": json.dumps(classified_list),
-                "chat_id": chat_id
+                "X-classification": json.dumps(classified_list),
+                "X-chat-id": chat_id,
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
             }
             tasks.add_task(openai_helper.saving_chat, chat_reply, customer_id,
                            account_id, chat_id, question)
