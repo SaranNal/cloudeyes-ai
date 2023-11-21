@@ -146,7 +146,13 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
 
 
 def saving_chat(reply, customer_id, account_id, chat_id, question):
-    reply_response = ''.join(reply).replace("data: ", "").replace("\n\n", "")
+    # save the answer part alone
+    reply_response = ''
+    for data in reply:
+        data = data.replace("data: ", "").replace("\n\n", "")
+        answer = json.loads(data)
+        answer = answer['answer']
+        reply_response += answer
     chat_data = [
         {
             "role": "user",
