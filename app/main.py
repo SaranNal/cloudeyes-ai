@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security.api_key import APIKeyHeader
 from fastapi import Security, HTTPException, Depends
+import pandas as pd
 from starlette.status import HTTP_403_FORBIDDEN
 from pydantic import BaseModel, Field, Json
 from typing import Any
@@ -13,7 +14,7 @@ import os
 from app.authenticator.cognito import cognito_validate
 from starlette.responses import JSONResponse
 import app.db_utility as db_utility
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 import json
 import time
@@ -155,16 +156,60 @@ def list_chat_history(input_data: HistoryList):
         {
             '$group': {
                 '_id': '$chat_id',
-                'doc': {'$first': '$$ROOT'}
+                'timestamp': {'$first': '$timestamp'},
+                'chat_data': {'$push': '$chat_data'}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "chat_id": "$_id",
+                "timestamp": 1,
+                "chat_data": 1
             }
         }
     ])
 
-    response = {}
+    response = []
     try:
+        modified_chat_threads = []
         for chat_thread in chat_threads:
-            response[chat_thread["doc"]["chat_id"]] = helper.summarize_string(
-                chat_thread["doc"]["chat_data"][0]['content'])
+            chat_thread['chat_data'] = helper.summarize_string(
+                chat_thread['chat_data'][0][0]['content'])
+            modified_chat_threads.append(chat_thread)
+
+        # Convert to DataFrame and set timestamp as index
+        df = pd.DataFrame(modified_chat_threads)
+        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        df.set_index('timestamp', inplace=True)
+
+        # Define date ranges
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        last_week = today - timedelta(days=7)
+        last_month = today - timedelta(days=30)
+
+        # Filter data for today, last week, and last month
+        today_data = df[df.index.date == today.date()].transpose()
+        last_week_data = df[(df.index.date > last_week.date()) & (
+            df.index.date <= today.date())].transpose()
+        last_month_data = df[(df.index.date > last_month.date()) & (
+            df.index.date <= last_week.date())].transpose()
+        # setup response in the desired format
+        response = [
+            {
+                'date': "Today",
+                'history': today_data
+            },
+            {
+                'date': "Last Week",
+                'history': last_week_data
+            },
+            {
+                'date': "Previous 30 days",
+                'history': last_month_data
+            }
+        ]
+
     except Exception as err:
         print('Unable to generate chat history', err)
 
