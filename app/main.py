@@ -17,6 +17,7 @@ from datetime import datetime
 import itertools
 import json
 import time
+from app.db_utility import get_database
 
 
 class QuestionData(BaseModel):
@@ -97,13 +98,44 @@ async def root():
     return {"message": "It's working"}
 
 
+def question_limiter(func):
+    def decorator(input_data: QuestionData):
+        customer_id = input_data.customer_id
+        admin_db = get_database('admin')
+        today = datetime.today()
+        month_year = today.strftime("%b-%Y")
+        customer_data = dict(admin_db['customers'].find_one(
+            {'customer_id': customer_id}))
+        print("1")
+        if 'usage' in customer_data:
+            print("2")
+            if month_year in customer_data['usage']:
+                print("3")
+                if customer_data['usage'][month_year] > 100:
+                    print("4")
+                    return {"message": "Limit exceeded"}
+                customer_data['usage'][month_year] += 1
+            else:
+                print("5")
+                customer_data['usage'][month_year] = 1
+        else:
+            print("6")
+            customer_data['usage'][month_year] = 1
+            filter_criteria = {"customer_id": customer_id}
+            to_update_data = {"$set": {"usage": customer_data['usage']}}
+            admin_db['customers'].update_one(filter_criteria, to_update_data)
+        return func(input_data)
+    return decorator
+
+
 @app.post("/chat")
+@question_limiter
 def question(input_data: QuestionData):
     question = input_data.question
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
-
+    return {"answer": "Invalid question"}
     if not question:
         return {"Please pass a question"}
     classified_list = openai_helper.classify_question(question)
