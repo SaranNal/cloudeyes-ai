@@ -95,6 +95,24 @@ async def cognito_authenticate(request: Request, call_next):
         return JSONResponse(status_code=401, content="Authentication failed")
 
 
+@app.middleware("https")
+async def cognito_authenticate_https(request: Request, call_next):
+    try:
+        token = request.headers["Authorization"]
+    except KeyError:
+        # return HTTPException(status_code=401)
+        # or 401
+        return JSONResponse(status_code=401, content="Authentication missing")
+
+    verification_of_token = cognito_validate(token)
+    if verification_of_token:
+        response = await call_next(request)
+        return response
+    else:
+        # or 401
+        return JSONResponse(status_code=401, content="Authentication failed")
+
+
 @app.get("/")
 async def root():
     return {"message": "It's working"}
