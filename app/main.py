@@ -82,7 +82,7 @@ async def get_api_key(api_key_header: str = Security(api_key_header)):
 @app.middleware("http")
 async def cognito_authenticate(request: Request, call_next):
     # since authorization isn't part of the OPTIONS request
-    if request.method == "OPTIONS":
+    if request.method == "OPTIONS" or request.url.path in ['/', '/docs', '/favicon.ico', '/openapi.json']:
         response = await call_next(request)
         return response
     try:
