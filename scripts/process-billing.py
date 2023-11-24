@@ -4,7 +4,6 @@ from dateutil.tz import tzutc
 from collections import defaultdict
 from app.db_utility import get_database
 from app.helper import dict_helper, retrieve_file_n_decode, move_processed_fie
-
 import sys
 from datetime import datetime
 

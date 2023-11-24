@@ -12,8 +12,8 @@ def cognito_validate(token):
     print(token)
     # Configuration
     REGION = 'us-east-1'
-    # USER_POOL_ID = 'us-east-1_KudKy0yPJ'
-    USER_POOL_ID = 'us-east-1_1i5LrrrxV'
+    USER_POOL_ID = 'us-east-1_KudKy0yPJ'
+    # USER_POOL_ID = 'us-east-1_1i5LrrrxV'
     COGNITO_KEYS_URL = f'https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json'
 
     # Fetch Cognito JWKS
