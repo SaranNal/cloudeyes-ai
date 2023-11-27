@@ -134,7 +134,6 @@ def question(input_data: QuestionData):
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
-    return {"answer": "Invalid question"}
     if not question:
         return {"Please pass a question"}
     classified_list = openai_helper.classify_question(question)
