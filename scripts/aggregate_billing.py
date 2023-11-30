@@ -20,6 +20,7 @@ def aggregate_billing():
         start_date = end_date - timedelta(days=365)
         pipeline = [
             {"$match": {"date": {"$gte": start_date, "$lte": end_date}}},
+            {"$sort": {"date": 1}},
             {'$project': {'_id': 0, }},
             {
                 "$group": {
@@ -50,8 +51,8 @@ def aggregate_billing():
             billing_df = billing_df.transpose()
 
             # # Calculate the mean for the last 12 months and 30 days
-            last_12_months_mean = billing_df.last("12M").mean()
-            last_30_days_mean = billing_df.last("30D").mean()
+            last_12_months_mean = billing_df.mean()
+            last_30_days_mean = billing_df.tail(30).mean()
 
             mean_values = {
                 'last_12_months': last_12_months_mean.round(2),

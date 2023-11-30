@@ -1,6 +1,7 @@
 import requests
 from jose import jwt, JWTError
 from jwcrypto import jwk
+import app.helper as helper
 
 
 def jwk_to_pem(jwk_json):
@@ -12,8 +13,8 @@ def cognito_validate(token):
     print(token)
     # Configuration
     REGION = 'us-east-1'
-    # USER_POOL_ID = 'us-east-1_KudKy0yPJ'
-    USER_POOL_ID = 'us-east-1_1i5LrrrxV'
+    USER_POOL_ID = helper.get_settings("user_pool_id")
+
     COGNITO_KEYS_URL = f'https://cognito-idp.{REGION}.amazonaws.com/{USER_POOL_ID}/.well-known/jwks.json'
 
     # Fetch Cognito JWKS

@@ -9,19 +9,19 @@ from app.openai_helper import count_number_of_token
 def aggregate_timeseries(data, range='year'):
     """Function to aggregate a DataFrame to different time frequencies"""
     frame = pd.DataFrame(data)
-    frame.index = pd.to_datetime(frame.index)
+    # frame.index = pd.to_datetime(frame.index)
 
-    range_mapping = {
-        'year': 365,
-        'month': 30,
-        'week': 7
-    }
-    filtered_frame = frame[frame.index > frame.index.max(
-    ) - pd.DateOffset(days=range_mapping[range])]
+    # range_mapping = {
+    #     'year': 365,
+    #     'month': 30,
+    #     'week': 7
+    # }
+    # filtered_frame = frame[frame.index > frame.index.max(
+    # ) - pd.DateOffset(days=range_mapping[range])]
 
     # Calculate the mean for the last 12 months and 30 days
-    last_12_month_mean = filtered_frame.last('12M').mean()
-    last_30_days_mean = filtered_frame.last('30D').mean()
+    last_12_month_mean = frame.mean()
+    last_30_days_mean = frame.tail(30).mean()
 
     mean_values = {
         'last_12_months': last_12_month_mean.round(2),
@@ -46,6 +46,7 @@ def aggregate_utilization():
         start_date = end_date - timedelta(days=365)
         pipeline = [
             {"$match": {"date": {"$gte": start_date, "$lte": end_date}}},
+            {"$sort": {"date": 1}},
             {'$project': {'_id': 0, 'date': 0, }},
             {
                 "$group": {
@@ -84,7 +85,8 @@ def aggregate_utilization():
                                     for instance_key, instance_value in value.items():
                                         flattened_key = f"{service}|{inner_key}|{date_key}"
                                         # Add the flattened key and value to the result dictionary
-                                        results[flattened_key][instance_key] = instance_value
+                                        if is_date(instance_key):
+                                            results[flattened_key][instance_key] = instance_value
 
             resampled = aggregate_timeseries(results)
             resampled.index = resampled.index.astype(str)
