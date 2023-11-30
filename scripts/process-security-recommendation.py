@@ -2,7 +2,7 @@ import json
 import datetime
 from dateutil.tz import tzutc
 from collections import defaultdict
-from app.db_utility import get_customer_db
+from app.db_utility import get_database
 import app.helper as helper
 import sys
 
@@ -19,16 +19,17 @@ for customer_id, accounts_data in recommendations_unprocessed.items():
     processed_recommendations = dict_helper()
     for account_data in accounts_data:
         for category, data_list in account_data['recommendations'].items():
-            processed_recommendations[customer_id][category] = []            
+            processed_recommendations[customer_id][category] = []
             for data in data_list:
-                data_dict = {}                
+                data_dict = {}
                 for key, val in data.items():
                     if key in attributes:
                         data_dict[key] = val
                 processed_recommendations[category].append(data_dict)
     preprocessed_recommendations.append(processed_recommendations)
-    
-    customer_db = get_customer_db(customer_id)
+
+    customer_db = get_database(customer_id)
+
     print(
         '----------------------------{}----------------------------'.format(customer_id))
     print('Security and Recommendation data: {}'.format(
