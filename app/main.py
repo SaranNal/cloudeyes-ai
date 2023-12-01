@@ -130,6 +130,7 @@ def question_limiter(func):
 
 
 @app.post("/chat")
+@question_limiter
 def question(input_data: QuestionData):
     question = input_data.question
     customer_id = input_data.customer_id
