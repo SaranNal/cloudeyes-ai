@@ -16,21 +16,20 @@ attributes = ["name", "description", "metadata"]
 
 for customer_records in recommendations_unprocessed:
     preprocessed_recommendations = []
-    processed_recommendations = dict_helper()
     for accounts_data in customer_records['data']:
+        processed_recommendations = dict_helper()
         customer_id = customer_records['user_id']
-        account_id = accounts_data['account_id']
-        processed_recommendations[account_id]['account_id'] = account_id
+        processed_recommendations['account_id'] = accounts_data['account_id']
         for category, data_list in accounts_data['recommendations'].items():
-            processed_recommendations[account_id][category] = []
+            processed_recommendations['recommendations'][category] = []
             for data in data_list:
                 data_dict = {}
                 for key, val in data.items():
                     if key in attributes:
                         data_dict[key] = val
-                processed_recommendations[account_id][category].append(
+                processed_recommendations['recommendations'][category].append(
                     data_dict)
-    preprocessed_recommendations.append(processed_recommendations)
+        preprocessed_recommendations.append(processed_recommendations)
 
     customer_db = get_database(customer_id)
 

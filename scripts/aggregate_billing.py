@@ -51,8 +51,8 @@ def aggregate_billing():
             billing_df = billing_df.transpose()
 
             # # Calculate the mean for the last 12 months and 30 days
-            last_12_months_mean = billing_df.mean()
-            last_30_days_mean = billing_df.tail(30).mean()
+            last_12_months_mean = billing_df.sum()
+            last_30_days_mean = billing_df.tail(30).sum()
 
             mean_values = {
                 'last_12_months': last_12_months_mean.round(2),
