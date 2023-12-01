@@ -111,18 +111,20 @@ def question_limiter(func):
         month_year = today.strftime("%b-%Y")
         customer_data = dict(admin_db['customers'].find_one(
             {'customer_id': customer_id}))
-        if 'usage' in customer_data:
-            if month_year in customer_data['usage']:
-                if customer_data['usage'][month_year] > 100:
-                    return {"message": "Limit exceeded"}
-                customer_data['usage'][month_year] += 1
-            else:
-                customer_data['usage'][month_year] = 1
+        # Initialize 'usage' if it doesn't exist
+        if 'usage' not in customer_data:
+            customer_data['usage'] = {}
+
+        if month_year in customer_data['usage']:
+            if customer_data['usage'][month_year] > 100:
+                return {"message": "Limit exceeded"}
+            customer_data['usage'][month_year] += 1
         else:
             customer_data['usage'][month_year] = 1
-            filter_criteria = {"customer_id": customer_id}
-            to_update_data = {"$set": {"usage": customer_data['usage']}}
-            admin_db['customers'].update_one(filter_criteria, to_update_data)
+
+        filter_criteria = {"customer_id": customer_id}
+        to_update_data = {"$set": {"usage": customer_data['usage']}}
+        admin_db['customers'].update_one(filter_criteria, to_update_data)
         return func(input_data)
     return decorator
 
