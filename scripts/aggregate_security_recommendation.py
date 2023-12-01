@@ -15,26 +15,22 @@ def aggregated_security_recommendation():
             for account_data in security_recommendation_data.find():
                 account_id = account_data['account_id']
                 recommendation = account_data['recommendations']
+                aggregated_data = []
                 new_formatted_data = {
-                    "$set": {
-                        "account_id": account_id,
-                        "security_recommendation": "",
-                        "cost_optimizing": ""
-                    }
+                    "account_id": account_id,
+                    "security_recommendation": "",
+                    "cost_optimizing": ""
                 }
                 if "security" in recommendation:
                     security_recommendation = [d['name']
                                                for d in recommendation['security']]
-                    new_formatted_data['$set']['security_recommendation'] = security_recommendation
+                    new_formatted_data['security_recommendation'] = security_recommendation
                 if "cost_optimizing" in recommendation:
                     cost_optimizing = [d['name']
                                        for d in recommendation['cost_optimizing']]
-                    new_formatted_data['$set']['security_recommendation'] = cost_optimizing
-                filter_criteria = {"account_id": account_id}
-                agg_security_recommendation_data = customer_db['aggregate_security_recommendations']
-                result = agg_security_recommendation_data.update_one(
-                    filter_criteria, new_formatted_data, upsert=True)
-                print(
-                    f"Matched {result.modified_count} document(s) and updated {result.modified_count} document(s).")
+                    new_formatted_data['cost_optimizing'] = cost_optimizing
+                aggregated_data.append(new_formatted_data)
+                insert_data_customer_db(customer_id, 'aggregate_security_recommendations', aggregated_data, {
+                    'account_id': account_id})
     except Exception as e:
         print(f"An error occurred: {e}")
