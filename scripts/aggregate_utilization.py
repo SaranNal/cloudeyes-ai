@@ -20,8 +20,8 @@ def aggregate_timeseries(data, range='year'):
     # ) - pd.DateOffset(days=range_mapping[range])]
 
     # Calculate the mean for the last 12 months and 30 days
-    last_12_month_mean = frame.mean()
-    last_30_days_mean = frame.tail(30).mean()
+    last_12_month_mean = frame.mean().fillna(0)
+    last_30_days_mean = frame.tail(30).mean().fillna(0)
 
     mean_values = {
         'last_12_months': last_12_month_mean.round(2),

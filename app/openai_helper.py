@@ -99,6 +99,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
     previous_chats = get_previous_chat_messages(
         customer_id, account_id, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
+    print("context:", context)
     client = OpenAI(
         api_key=helper.get_settings("openai_key"),
     )
