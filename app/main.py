@@ -180,11 +180,11 @@ def list_chat_history(input_data: HistoryList):
     # group by chat_id, sort by timestamp desc and get one record
     chat_threads = chat_threads_collection.aggregate([
         {'$match': {'account_id': account_id}},
-        {'$sort': {'timestamp': -1}},
+        {'$sort': {'timestamp': 1}},
         {
             '$group': {
                 '_id': '$chat_id',
-                'timestamp': {'$first': '$timestamp'},
+                'timestamp': {'$last': '$timestamp'},
                 'chat_data': {'$push': '$chat_data'}
             }
         },
