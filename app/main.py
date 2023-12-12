@@ -188,6 +188,7 @@ def list_chat_history(input_data: HistoryList):
                 'chat_data': {'$push': '$chat_data'}
             }
         },
+        {'$sort': {'timestamp': 1}},
         {
             "$project": {
                 "_id": 0,
