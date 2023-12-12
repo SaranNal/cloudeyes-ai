@@ -177,7 +177,7 @@ def list_chat_history(input_data: HistoryList):
 
     customer_db = db_utility.get_database(customer_id)
     chat_threads_collection = customer_db["chat_threads"]
-    # group by chat_id, sort by timestamp asc and get one record
+    # group by chat_id, sort by timestamp desc and get one record
     chat_threads = chat_threads_collection.aggregate([
         {'$match': {'account_id': account_id}},
         {'$sort': {'timestamp': -1}},
