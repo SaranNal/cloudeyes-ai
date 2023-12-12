@@ -180,7 +180,7 @@ def list_chat_history(input_data: HistoryList):
     # group by chat_id, sort by timestamp asc and get one record
     chat_threads = chat_threads_collection.aggregate([
         {'$match': {'account_id': account_id}},
-        {'$sort': {'timestamp': 1}},
+        {'$sort': {'timestamp': -1}},
         {
             '$group': {
                 '_id': '$chat_id',
@@ -188,7 +188,7 @@ def list_chat_history(input_data: HistoryList):
                 'chat_data': {'$push': '$chat_data'}
             }
         },
-        {'$sort': {'timestamp': 1}},
+        {'$sort': {'timestamp': -1}},
         {
             "$project": {
                 "_id": 0,
@@ -220,9 +220,9 @@ def list_chat_history(input_data: HistoryList):
         # Filter data for today, last week, and last month
         today_data = df[df.index.date == today.date()].transpose()
         last_week_data = df[(df.index.date > last_week.date()) & (
-            df.index.date <= today.date())].transpose()
+            df.index.date < today.date())].transpose()
         last_month_data = df[(df.index.date > last_month.date()) & (
-            df.index.date <= last_week.date())].transpose()
+            df.index.date < last_week.date())].transpose()
         # setup response in the desired format
         response = [
             {
