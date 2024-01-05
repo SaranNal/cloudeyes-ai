@@ -79,4 +79,4 @@ for customer_id, metric_datas in metric_data.items():
     result = daily_utilization.insert_many(daily_utilization_data)
     print('Mongo insertion id: {}'.format(result.inserted_ids))
     print('--------------------------------------------------------')
-    metadata = move_processed_fie(sys)
+metadata = move_processed_fie(sys)
