@@ -30,8 +30,18 @@ for customer_id, metric_datas in metric_data.items():
         # Loop through services and metrics
         for services in metric_data:
             for service, metric_list in services.items():
+                instance_metadata = {}
                 for metric_dict in metric_list:
                     for instance_id, metrics in metric_dict.items():
+                        # metadata dict so that it can be appended to all applicable instances
+                        if 'metadata' in metric_dict:
+                            metadatas = metric_dict['metadata']
+                            metadata_instance_id = metadatas[metadata_id[service]
+                                                             ] if metadata_id[service] in metadatas else None
+                            if metadata_instance_id:
+                                instance_metadata[metadata_instance_id] = {
+                                    key: metadatas[key] for key in metadata[service] if key in metadatas}
+
                         is_metric_result = instance_id == 'MetricDataResults'
                         if instance_id not in ['metadata', 'Messages', 'ResponseMetadata']:
                             service_metrics = metrics if is_metric_result else metrics[
@@ -49,13 +59,9 @@ for customer_id, metric_datas in metric_data.items():
                                     else:
                                         tmp_metric_data[date][service][instance_id][metric['Label']
                                                                                     ] = formatted_metric
-                        elif instance_id == 'metadata':
-                            # Add metadata for EC2 and RDS services
-                            instance_id = metrics[metadata_id[service]
-                                                  ] if metadata_id[service] in metrics else None
-                            if instance_id:
-                                tmp_metric_data[date][service][instance_id]['metadata'] = {
-                                    key: metrics[key] for key in metadata[service] if key in metrics}
+                                        # Add metadata for EC2 and RDS services
+                                        if instance_id in instance_metadata:
+                                            tmp_metric_data[date][service][instance_id]['metadata'] = instance_metadata[instance_id]
 
         # Convert data to the format that can be inserted into the database
         for metric_date, formatted_metric in tmp_metric_data.items():
@@ -73,4 +79,4 @@ for customer_id, metric_datas in metric_data.items():
     result = daily_utilization.insert_many(daily_utilization_data)
     print('Mongo insertion id: {}'.format(result.inserted_ids))
     print('--------------------------------------------------------')
-    metadata = move_processed_fie(sys)
+metadata = move_processed_fie(sys)

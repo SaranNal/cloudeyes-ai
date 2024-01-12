@@ -35,4 +35,4 @@ for customer_records in recommendations_unprocessed:
 
         insert_data_customer_db(customer_id, 'security_recommendations', preprocessed_recommendations, {
             'account_id': account_id})
-        metadata = helper.move_processed_fie(sys)
+metadata = helper.move_processed_fie(sys)

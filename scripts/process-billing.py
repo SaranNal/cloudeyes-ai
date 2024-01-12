@@ -32,4 +32,4 @@ for customer_id, accounts_list in billing_datas.items():
         result = daily_billing.insert_many(final_billing)
         print('Mongo insertion id: {}'.format(result.inserted_ids))
         print('--------------------------------------------------------')
-    metadata = move_processed_fie(sys)
+metadata = move_processed_fie(sys)

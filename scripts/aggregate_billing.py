@@ -60,6 +60,9 @@ def aggregate_billing():
             }
             aggregated_billing_data = pd.DataFrame(mean_values).transpose()
             aggregated_billing_data = aggregated_billing_data.to_dict()
+            # remove tax and support from billing data
+            if 'Tax' in aggregated_billing_data: del aggregated_billing_data['Tax']
+            if 'AWS Support (Business)' in aggregated_billing_data: del aggregated_billing_data['AWS Support (Business)']
             aggregated_billing_data['token_size'] = count_number_of_token(
                 json.dumps(aggregated_billing_data, separators=(',', ':')), 'cl100k_base')
             aggregated_billing_data['account_id'] = account_id
