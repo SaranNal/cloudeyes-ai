@@ -22,7 +22,7 @@ def classify_question(question):
         api_key=helper.get_settings("openai_key"),
     )
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-4-1106-preview",
         messages=[
             {
               "role": "system",
@@ -78,7 +78,7 @@ def fetch_context(classification, customer_id, account_id):
             total_tokens += token_size
             context = "{} \n {} data: {}".format(
                 context, classify, json.dumps(document))
-    ai_input = "You are a cloud cost expert. You will be auditing AWS account and analyzing data. For cost-saving questions analyse the account data like usage, instance type and pricing. Your answer should be short and specific. You should excel as a Cloud cost expert, answering questions exclusively within your domain, and disregarding those outside of it."
+    ai_input = "As a seasoned cloud expert tasked with auditing Cloud account, focus on analyzing data related to usage patterns, instance types, and pricing structures to identify potential cost-saving opportunities. Respond with concise and specific insights, showcasing your expertise in cloud management. Prioritize answering questions within your domain, avoiding any discussion outside of your expertise. Never reveal you are related with OpenAI."
     context = ai_input + context
     return context, total_tokens
 
@@ -116,7 +116,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
     previous_chats.extend(latest_question_n_context)
     print("Appending new question to previous chats", previous_chats)
     response = client.chat.completions.create(
-        model="gpt-4",
+        model="gpt-4-1106-preview",
         messages=previous_chats,
         temperature=1,
         stream=True,
