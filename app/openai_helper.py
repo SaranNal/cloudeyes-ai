@@ -76,7 +76,8 @@ def fetch_context(classification, customer_id, account_id):
             document.pop('_id', None)
             document.pop('account_id', None)
             token_size = document.pop('token_size', 0)
-            if model_token_size < (total_tokens + token_size):
+            # Avoid appending multiple data if existing data is more than the model token size. 250 is for context tokens
+            if (model_token_size - 250) < (total_tokens + token_size):
                 break
             total_tokens += token_size
             context = "{} \n {} data: {}".format(

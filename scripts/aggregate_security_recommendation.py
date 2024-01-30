@@ -1,5 +1,8 @@
+import json
 from app.db_utility import get_database, insert_data_customer_db
 from bs4 import BeautifulSoup
+
+from app.openai_helper import count_number_of_token
 
 
 def extract_alert_action(recommendation, type):
@@ -81,6 +84,8 @@ def aggregated_security_recommendation():
                     recommendation, 'security')
                 new_formatted_data['cost_optimizing'] = extract_alert_action(
                     recommendation, 'cost_optimizing')
+                new_formatted_data['token_size'] = count_number_of_token(
+                    json.dumps(new_formatted_data, separators=(',', ':')), 'cl100k_base')
                 aggregated_data.append(new_formatted_data)
                 insert_data_customer_db(customer_id, 'aggregate_security_recommendations', aggregated_data, {
                     'account_id': account_id})
