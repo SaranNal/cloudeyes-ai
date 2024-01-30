@@ -22,7 +22,7 @@ def classify_question(question):
         api_key=helper.get_settings("openai_key"),
     )
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-turbo-preview",
         messages=[
             {
               "role": "system",
@@ -71,10 +71,13 @@ def fetch_context(classification, customer_id, account_id):
             classify_collection = 'aggregate_billing'
         customer_collection = customer_db[classify_collection]
         customer_details = customer_collection.find({'account_id': account_id})
+        model_token_size = int(helper.get_settings("model_token_size"))
         for document in customer_details:
             document.pop('_id', None)
             document.pop('account_id', None)
             token_size = document.pop('token_size', 0)
+            if model_token_size < (total_tokens + token_size):
+                break
             total_tokens += token_size
             context = "{} \n {} data: {}".format(
                 context, classify, json.dumps(document))
@@ -116,7 +119,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
     previous_chats.extend(latest_question_n_context)
     print("Appending new question to previous chats", previous_chats)
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-turbo-preview",
         messages=previous_chats,
         temperature=1,
         stream=True,
