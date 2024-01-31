@@ -81,7 +81,7 @@ def fetch_context(classification, customer_id, account_id):
                 break
             total_tokens += token_size
             context = "{} \n {} data: {}".format(
-                context, classify, json.dumps(document))
+                context, classify, json.dumps(document, separators=(',', ':')))
     ai_input = "As a seasoned cloud expert tasked with auditing Cloud account, focus on analyzing data related to usage patterns, instance types, and pricing structures to identify potential cost-saving opportunities. Respond with concise and specific insights, showcasing your expertise in cloud management. Prioritize answering questions within your domain, avoiding any discussion outside of your expertise. Never reveal you are related with OpenAI."
     context = ai_input + context
     return context, total_tokens
@@ -100,6 +100,8 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         classification, customer_id, account_id)
     useable_token_size = int(helper.get_settings(
         "model_token_size")) - context_token_size
+    print("context_token -", context_token_size)
+    print("useable_token -", useable_token_size)
     previous_chats = get_previous_chat_messages(
         customer_id, account_id, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
