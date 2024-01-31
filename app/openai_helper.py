@@ -22,7 +22,7 @@ def classify_question(question):
         api_key=helper.get_settings("openai_key"),
     )
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-turbo-preview",
         messages=[
             {
               "role": "system",
@@ -71,13 +71,17 @@ def fetch_context(classification, customer_id, account_id):
             classify_collection = 'aggregate_billing'
         customer_collection = customer_db[classify_collection]
         customer_details = customer_collection.find({'account_id': account_id})
+        model_token_size = int(helper.get_settings("model_token_size"))
         for document in customer_details:
             document.pop('_id', None)
             document.pop('account_id', None)
             token_size = document.pop('token_size', 0)
+            # Avoid appending multiple data if existing data is more than the model token size. 250 is for context tokens
+            if (model_token_size - 250) < (total_tokens + token_size):
+                break
             total_tokens += token_size
             context = "{} \n {} data: {}".format(
-                context, classify, json.dumps(document))
+                context, classify, json.dumps(document, separators=(',', ':')))
     ai_input = "As a seasoned cloud expert tasked with auditing Cloud account, focus on analyzing data related to usage patterns, instance types, and pricing structures to identify potential cost-saving opportunities. Respond with concise and specific insights, showcasing your expertise in cloud management. Prioritize answering questions within your domain, avoiding any discussion outside of your expertise. Never reveal you are related with OpenAI."
     context = ai_input + context
     return context, total_tokens
@@ -96,6 +100,8 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         classification, customer_id, account_id)
     useable_token_size = int(helper.get_settings(
         "model_token_size")) - context_token_size
+    print("context_token -", context_token_size)
+    print("useable_token -", useable_token_size)
     previous_chats = get_previous_chat_messages(
         customer_id, account_id, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
@@ -116,7 +122,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
     previous_chats.extend(latest_question_n_context)
     print("Appending new question to previous chats", previous_chats)
     response = client.chat.completions.create(
-        model="gpt-4-1106-preview",
+        model="gpt-4-turbo-preview",
         messages=previous_chats,
         temperature=1,
         stream=True,
