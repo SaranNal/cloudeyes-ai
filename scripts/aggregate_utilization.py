@@ -1,7 +1,7 @@
 import json
 import pandas as pd
 from app.helper import dict_helper, is_date
-from app.db_utility import get_database, insert_data_customer_db
+from app.db_utility import get_daily_data, get_database, insert_data_customer_db
 from datetime import datetime, timedelta
 from app.openai_helper import count_number_of_token
 
@@ -54,39 +54,18 @@ def aggregate_utilization():
         customer_id = customer['customer_id']
         print("Aggregating utilization data for customer: {}".format(customer_id))
         customer_db = get_database(customer_id)
-        daily_utilization = customer_db['daily_utilization']
-
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=365)
-        pipeline = [
-            {"$match": {"date": {"$gte": start_date, "$lte": end_date}}},
-            {"$sort": {"date": 1}},
-            {'$project': {'_id': 0, 'date': 0, }},
-            {
-                "$group": {
-                    "_id": "$account_id",
-                    "data": {"$push": "$$ROOT"}
-                }
-            },
-            {
-                "$project": {
-                    "_id": 0,
-                    "account_id": "$_id",
-                    "data": 1,
-                }
-            }
-        ]
-        utilization_data = daily_utilization.aggregate(pipeline)
+        utilization_data = get_daily_data('daily_utilization', customer_db)
 
         # Iterate through the list of dictionaries
         for accounts in utilization_data:
             results = dict_helper()
             metadata_dict = dict_helper()
             account_id = accounts['account_id']
+            tag = accounts['tag'] if 'tag' in accounts else ''
             for services in accounts['data']:
                 # Iterate through the outer keys (EFS, S3, app_runner, etc.)
                 for service, inner_dict in services.items():
-                    if service != 'account_id':
+                    if service not in ['account_id', 'tag']:
                         # Iterate through the inner keys (PercentIOLimit, StorageBytes, etc.)
                         for inner_key, instance_dict in inner_dict.items():
                             # Iterate through the date keys (09/01/2022, 09/02/2022, etc.)
@@ -119,9 +98,9 @@ def aggregate_utilization():
             final_aggregated_data['token_size'] = count_number_of_token(
                 json.dumps(final_aggregated_data, separators=(',', ':')), 'cl100k_base')
             final_aggregated_data['account_id'] = account_id
+            final_aggregated_data['tag'] = tag
             aggregated_utilization.append(final_aggregated_data)
-
             insert_data_customer_db(customer_id, 'aggregate_utilization', aggregated_utilization, {
-                                    'account_id': account_id})
+                                    'account_id': account_id, 'tag': tag})
 
     print("Aggregated utilization data for all customers")

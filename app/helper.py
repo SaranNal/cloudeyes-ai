@@ -92,10 +92,10 @@ def retrieve_file_n_decode(sys):
         sys.exit(1)
 
 
-def generate_chatid(account_id, question):
-    """Generate chat id using account_id and current timestamp"""
+def generate_chatid(account_id, tag, question):
+    """Generate chat id using account_id, tag and current timestamp"""
     timestamp = str(int(time.time()))
-    data = account_id + question + timestamp
+    data = account_id + tag + question + timestamp
     return str(uuid.uuid5(uuid.NAMESPACE_X500, data))
 
 
@@ -122,8 +122,9 @@ def move_processed_fie(sys):
 
     try:
         # Fetch the file and read its contents
-        destination_key = source_key.replace("/raw/", "/processed/")  # Replace only the first occurrence
-        
+        # Replace only the first occurrence
+        destination_key = source_key.replace("/raw/", "/processed/")
+
         # Copy the object from the source to the destination
         s3.copy_object(
             CopySource={'Bucket': bucket_name, 'Key': source_key},

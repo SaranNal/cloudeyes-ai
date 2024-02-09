@@ -58,19 +58,24 @@ def classify_question(question):
 
 
 # Fetching context based on classification
-def fetch_context(classification, customer_id, account_id):
+def fetch_context(classification, customer_id, account_id, tag):
     customer_db = db_utility.get_database(customer_id)
     context = ""
     total_tokens = 0
+    filter_criteria = {'account_id': account_id}
+    if len(tag) > 0:
+        filter_criteria['tag'] = tag
     for classify in classification:
         if classify == 'Utilization':
             classify_collection = 'aggregate_utilization'
         elif classify == 'Security' or classify == 'Recommendation':
             classify_collection = 'aggregate_security_recommendations'
+            if 'tag' in filter_criteria:
+                del filter_criteria['tag']
         elif classify == ('Billing'):
             classify_collection = 'aggregate_billing'
         customer_collection = customer_db[classify_collection]
-        customer_details = customer_collection.find({'account_id': account_id})
+        customer_details = customer_collection.find(filter_criteria)
         model_token_size = int(helper.get_settings("model_token_size"))
         for document in customer_details:
             document.pop('_id', None)
@@ -95,15 +100,15 @@ def count_number_of_token(string: str, encoding_name: str) -> int:
 
 
 # Fetching context for question by passing classification
-def openai_answer(classification, question, customer_id, account_id, chat_id):
+def openai_answer(classification, question, customer_id, account_id, tag, chat_id):
     context, context_token_size = fetch_context(
-        classification, customer_id, account_id)
+        classification, customer_id, account_id, tag)
     useable_token_size = int(helper.get_settings(
         "model_token_size")) - context_token_size
     print("context_token -", context_token_size)
     print("useable_token -", useable_token_size)
     previous_chats = get_previous_chat_messages(
-        customer_id, account_id, chat_id, useable_token_size)
+        customer_id, account_id, tag, chat_id, useable_token_size)
     print("previous_chats:", previous_chats)
     print("context:", context)
     client = OpenAI(
@@ -152,7 +157,7 @@ def openai_answer(classification, question, customer_id, account_id, chat_id):
         yield "Error occurred in answer"
 
 
-def saving_chat(reply, customer_id, account_id, chat_id, question):
+def saving_chat(reply, customer_id, account_id, tag, chat_id, question):
     # save the answer part alone
     reply_response = ''
     for data in reply:
@@ -177,6 +182,7 @@ def saving_chat(reply, customer_id, account_id, chat_id, question):
         "timestamp": datetime.now(),
         "chat_id": chat_id,
         "account_id": account_id,
+        "tag": tag,
         "chat_data": chat_data
     }
     customer_db = db_utility.get_database(customer_id)
@@ -185,12 +191,12 @@ def saving_chat(reply, customer_id, account_id, chat_id, question):
     return True
 
 
-def get_previous_chat_messages(customer_id, account_id, chat_id, useable_token_size):
+def get_previous_chat_messages(customer_id, account_id, tag, chat_id, useable_token_size):
     print("Previous chat messages")
     customer_db = db_utility.get_database(customer_id)
     customer_collection = customer_db["chat_threads"]
     chat_data = customer_collection.find(
-        {"account_id": account_id, "chat_id": chat_id})
+        {"account_id": account_id, "tag": tag, "chat_id": chat_id})
     previous_chat = []
 
     total_previous_chat_token_size = 0

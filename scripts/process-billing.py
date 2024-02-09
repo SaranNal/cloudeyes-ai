@@ -17,6 +17,7 @@ for customer_id, accounts_list in billing_datas.items():
                 for billing_date, billing in billing_data.items():
                     final_billing_data = dict_helper()
                     final_billing_data['account_id'] = account['account_id']
+                    final_billing_data['tag'] = account['tag'] if 'tag' in account else ''
                     final_billing_data['date'] = datetime.strptime(
                         billing_date, '%Y-%m-%d')
                     final_billing_data['billing'] = {k: round(float(v), 5)

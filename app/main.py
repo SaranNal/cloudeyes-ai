@@ -1,3 +1,4 @@
+import traceback
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -6,7 +7,7 @@ from fastapi import Security, HTTPException, Depends
 import pandas as pd
 from starlette.status import HTTP_403_FORBIDDEN
 from pydantic import BaseModel, Field, Json
-from typing import Any
+from typing import Any, Optional
 import app.helper as helper
 import uvicorn
 import app.openai_helper as openai_helper
@@ -34,6 +35,9 @@ class QuestionData(BaseModel):
     account_id: str = Field(
         default=None, title="Customer account id"
     )
+    tag: Optional[str] = Field(
+        default=None, title="Tag if any"
+    )
 
 
 class HistoryList(BaseModel):
@@ -42,6 +46,9 @@ class HistoryList(BaseModel):
     )
     account_id: str = Field(
         default=None, title="Customer account id"
+    )
+    tag: Optional[str] = Field(
+        default=None, title="Tag if any"
     )
 
 
@@ -54,6 +61,9 @@ class HistoryItem(BaseModel):
     )
     chat_id: str = Field(
         default=None, title="Chat id"
+    )
+    tag: Optional[str] = Field(
+        default=None, title="Tag if any"
     )
 
 
@@ -133,12 +143,13 @@ def question(input_data: QuestionData):
     customer_id = input_data.customer_id
     chat_id = input_data.chat_id
     account_id = input_data.account_id
+    tag = input_data.tag if input_data.tag else ""
     if not question:
         return {"Please pass a question"}
     classified_list = openai_helper.classify_question(question)
 
     if chat_id == "":
-        chat_id = helper.generate_chatid(account_id, question)
+        chat_id = helper.generate_chatid(account_id, tag, question)
 
     print("Chat thread id:", chat_id)
 
@@ -150,7 +161,7 @@ def question(input_data: QuestionData):
             elif 'None' in classified_list:
                 classified_list = ["Utilization"]
             answer = openai_helper.openai_answer(
-                classified_list, question, customer_id, account_id, chat_id)
+                classified_list, question, customer_id, account_id, tag, chat_id)
             message, chat_reply = itertools.tee(answer)
             tasks = BackgroundTasks()
             print("appending chat")
@@ -161,7 +172,7 @@ def question(input_data: QuestionData):
                 "Connection": "keep-alive"
             }
             tasks.add_task(openai_helper.saving_chat, chat_reply, customer_id,
-                           account_id, chat_id, question)
+                           account_id, tag, chat_id, question)
             return StreamingResponse(message, media_type="text/event-stream", background=tasks, headers=header)
         else:
             return {"answer": "Invalid question", "thread_id": "", "categories": [""]}
@@ -174,12 +185,20 @@ def question(input_data: QuestionData):
 def list_chat_history(input_data: HistoryList):
     customer_id = input_data.customer_id
     account_id = input_data.account_id
+    tag = input_data.tag
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    filter_criteria = {'account_id': account_id,
+                       'timestamp': {'$gte': start_date, '$lte': end_date}}
+    if tag:
+        filter_criteria['tag'] = tag
 
     customer_db = db_utility.get_database(customer_id)
     chat_threads_collection = customer_db["chat_threads"]
     # group by chat_id, sort by timestamp desc and get one record
     chat_threads = chat_threads_collection.aggregate([
-        {'$match': {'account_id': account_id}},
+        {'$match': filter_criteria},
         {'$sort': {'timestamp': 1}},
         {
             '$group': {
@@ -202,27 +221,29 @@ def list_chat_history(input_data: HistoryList):
     response = []
     try:
         modified_chat_threads = []
+        today_data, last_week_data, last_month_data = [], [], []
         for chat_thread in chat_threads:
             chat_thread['chat_data'] = helper.summarize_string(
                 chat_thread['chat_data'][0][0]['content'])
             modified_chat_threads.append(chat_thread)
 
-        # Convert to DataFrame and set timestamp as index
-        df = pd.DataFrame(modified_chat_threads)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
-        df.set_index('timestamp', inplace=True)
+        if len(modified_chat_threads) > 0:
+            # Convert to DataFrame and set timestamp as index
+            df = pd.DataFrame(modified_chat_threads)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df.set_index('timestamp', inplace=True)
 
-        # Define date ranges
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        last_week = today - timedelta(days=7)
-        last_month = today - timedelta(days=30)
+            # Define date ranges
+            today = end_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            last_week = today - timedelta(days=7)
+            last_month = today - timedelta(days=30)
 
-        # Filter data for today, last week, and last month
-        today_data = df[df.index.date == today.date()].transpose()
-        last_week_data = df[(df.index.date > last_week.date()) & (
-            df.index.date < today.date())].transpose()
-        last_month_data = df[(df.index.date > last_month.date()) & (
-            df.index.date < last_week.date())].transpose()
+            # Filter data for today, last week, and last month
+            today_data = df[df.index.date == today.date()].transpose()
+            last_week_data = df[(df.index.date > last_week.date()) & (
+                df.index.date < today.date())].transpose()
+            last_month_data = df[(df.index.date > last_month.date()) & (
+                df.index.date < last_week.date())].transpose()
         # setup response in the desired format
         response = [
             {
@@ -241,6 +262,7 @@ def list_chat_history(input_data: HistoryList):
 
     except Exception as err:
         print('Unable to generate chat history', err)
+        print(traceback.format_exc())
 
     return response
 
@@ -250,11 +272,12 @@ def chat_item(input_data: HistoryItem):
     customer_id = input_data.customer_id
     account_id = input_data.account_id
     chat_id = input_data.chat_id
+    tag = input_data.tag
 
     customer_db = db_utility.get_database(customer_id)
     chat_threads_collection = customer_db["chat_threads"]
     chat_threads = chat_threads_collection.find(
-        {"account_id": account_id, "chat_id": chat_id})
+        {"account_id": account_id, "tag": tag, "chat_id": chat_id})
 
     response = []
     for chat_thread in chat_threads:

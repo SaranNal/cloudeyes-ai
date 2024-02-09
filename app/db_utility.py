@@ -1,5 +1,6 @@
 from pymongo import MongoClient, errors
 from .helper import get_settings
+from datetime import datetime, timedelta
 
 mongo_url = get_settings("mongo_url")
 env = get_settings("env")
@@ -42,3 +43,32 @@ def insert_data_customer_db(customer_id, collection_name, data, delete_condition
         print("PyMongo Error:", e)
     except Exception as e:
         print("An unexpected error occurred:", e)
+
+
+def get_daily_data(collection, customer_db):
+    """Get daily billing/utilization data for past 365 days to aggregate"""
+    daily_collection = customer_db[collection]
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=365)
+    pipeline = [
+        {"$match": {"date": {"$gte": start_date, "$lte": end_date}}},
+        {"$sort": {"date": 1}},
+        {'$project': {'_id': 0, 'date': 0, }},
+        {
+            "$group": {
+                "_id": {"account_id": "$account_id", "tag": "$tag"},
+                "data": {"$push": "$$ROOT"}
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "account_id": "$_id.account_id",
+                "tag": "$_id.tag",
+                "data": 1,
+            }
+        }
+    ]
+
+    return daily_collection.aggregate(pipeline)

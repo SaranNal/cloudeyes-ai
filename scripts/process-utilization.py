@@ -24,8 +24,9 @@ metadata_id = {
 for customer_id, metric_datas in metric_data.items():
     daily_utilization_data = []
 
-    # Loop through account IDs and metric data for each customer
-    for account_id, metric_data in metric_datas.items():
+    # Loop through account IDs & tags(if present) and metric data for each customer
+    # account ID will be in the format account_id|tag_name
+    for account_id_tag, metric_data in metric_datas.items():
         tmp_metric_data = final_metric_data = dict_helper()
         # Loop through services and metrics
         for services in metric_data:
@@ -66,7 +67,11 @@ for customer_id, metric_datas in metric_data.items():
         # Convert data to the format that can be inserted into the database
         for metric_date, formatted_metric in tmp_metric_data.items():
             final_metric_data = formatted_metric
+            account_id_tag_list = account_id_tag.split('|')
+            account_id = account_id_tag_list[0] if len(account_id_tag_list) >= 1 else ''
+            tag = account_id_tag_list[1] if len(account_id_tag_list) >= 2 else ''
             final_metric_data['account_id'] = account_id
+            final_metric_data['tag'] = tag
             final_metric_data['date'] = metric_date
             daily_utilization_data.append(final_metric_data)
 
